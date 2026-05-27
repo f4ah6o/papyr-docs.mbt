@@ -1,0 +1,48 @@
+{
+  "name": "@f12o/papyr-adapter-cloudflare",
+  "version": "2026.5.0",
+  "description": "Papyr バックエンドアダプタ: Cloudflare Worker（KV / D1 / R2）",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@f12o/papyr-backend": "workspace:*",
+    "@f12o/papyr-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@cloudflare/workers-types": "^4.20240000.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241230.0"
+  },
+  "license": "MIT",
+  "author": "f12o",
+  "homepage": "https://github.com/f4ah6o/papyr#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/f4ah6o/papyr.git",
+    "directory": "packages/adapter-cloudflare"
+  },
+  "bugs": {
+    "url": "https://github.com/f4ah6o/papyr/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "name": "@f12o/papyr-editor",
+  "version": "2026.5.0",
+  "description": "Papyr の TipTap ベース ヘッドレスエディタ拡張",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@f12o/papyr-core": "workspace:*",
+    "@f12o/papyr-markdown": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tiptap/core": "^2.10.0",
+    "@tiptap/pm": "^2.10.0",
+    "@tiptap/starter-kit": "^2.10.0"
+  },
+  "devDependencies": {
+    "@f12o/papyr-test-support": "workspace:*",
+    "@tiptap/core": "^2.10.0",
+    "@tiptap/pm": "^2.10.0",
+    "@tiptap/starter-kit": "^2.10.0"
+  },
+  "license": "MIT",
+  "author": "f12o",
+  "homepage": "https://github.com/f4ah6o/papyr#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/f4ah6o/papyr.git",
+    "directory": "packages/editor"
+  },
+  "bugs": {
+    "url": "https://github.com/f4ah6o/papyr/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  }
+}

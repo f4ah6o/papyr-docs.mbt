@@ -1,0 +1,42 @@
+{
+  "name": "@f12o/papyr-preview",
+  "version": "2026.5.0",
+  "description": "Papyr のブラウザ / WebView 向けプレビュー描画",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@f12o/papyr-core": "workspace:*",
+    "mermaid": "^11.12.0"
+  },
+  "license": "MIT",
+  "author": "f12o",
+  "homepage": "https://github.com/f4ah6o/papyr#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/f4ah6o/papyr.git",
+    "directory": "packages/preview"
+  },
+  "bugs": {
+    "url": "https://github.com/f4ah6o/papyr/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  }
+}

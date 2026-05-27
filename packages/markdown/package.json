@@ -1,0 +1,49 @@
+{
+  "name": "@f12o/papyr-markdown",
+  "version": "2026.5.0",
+  "description": "Papyr Markdown 変換（table / excalidraw 向けカスタムフェンス対応）",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@f12o/papyr-core": "workspace:*",
+    "mdast-util-from-markdown": "^2.0.0",
+    "mdast-util-gfm": "^3.1.0",
+    "mdast-util-to-markdown": "^2.1.0",
+    "micromark-extension-gfm": "^3.0.0"
+  },
+  "devDependencies": {
+    "@f12o/papyr-test-support": "workspace:*",
+    "@types/mdast": "^4.0.0"
+  },
+  "license": "MIT",
+  "author": "f12o",
+  "homepage": "https://github.com/f4ah6o/papyr#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/f4ah6o/papyr.git",
+    "directory": "packages/markdown"
+  },
+  "bugs": {
+    "url": "https://github.com/f4ah6o/papyr/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  }
+}

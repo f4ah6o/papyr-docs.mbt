@@ -1,0 +1,7 @@
+node_modules/
+dist/
+packages/*/dist/
+*.tsbuildinfo
+src/client/public/search-index.json
+src/client/public/__papyr_docs_data/
+.wrangler/

@@ -1,0 +1,649 @@
+/*
+ * @papyr/editor-ui の共通スタイル。
+ * VS Code webview / docs サイト双方で使う。
+ */
+
+.editor-workspace {
+  --ew-bg: var(--vscode-editor-background, #ffffff);
+  --ew-fg: var(--vscode-editor-foreground, #1f2629);
+  --ew-muted: var(--vscode-descriptionForeground, #5c6770);
+  --ew-border: var(--vscode-panel-border, rgba(0, 0, 0, 0.12));
+  --ew-input-border: var(--vscode-input-border, var(--ew-border));
+  --ew-action-bg: var(--vscode-button-background, #1f6f5f);
+  --ew-action-fg: var(--vscode-button-foreground, #ffffff);
+  --ew-focus: var(--vscode-focusBorder, #1f6f5f);
+  --ew-error-bg: var(--vscode-inputValidation-errorBackground, #5a1d1d);
+  --ew-error-fg: var(--vscode-inputValidation-errorForeground, #ffffff);
+  --ew-surface: color-mix(in srgb, var(--ew-bg) 95%, white 5%);
+  --ew-soft: color-mix(in srgb, var(--ew-bg) 92%, white 8%);
+  --ew-code-bg: color-mix(in srgb, var(--ew-bg) 84%, black 16%);
+  --ew-editor-font: var(--vscode-editor-font-family, ui-monospace, SFMono-Regular, monospace);
+  --ew-editor-line-height: 1.65;
+
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  min-height: 100%;
+  width: 100%;
+  color: var(--ew-fg);
+  background: var(--ew-bg);
+}
+
+.editor-workspace,
+.editor-workspace *,
+.editor-workspace *::before,
+.editor-workspace *::after {
+  box-sizing: border-box;
+}
+
+.editor-workspace__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ew-border);
+}
+
+.editor-workspace__eyebrow,
+.editor-workspace__modal-eyebrow {
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+  color: var(--ew-muted);
+}
+
+.editor-workspace__title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.editor-workspace__subtitle {
+  margin: 4px 0 0;
+  color: var(--ew-muted);
+  font-size: 0.9rem;
+}
+
+.editor-workspace__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.editor-workspace__action,
+.editor-workspace__toolbar-button,
+.editor-workspace__modal-close {
+  border-radius: 999px;
+  border: 1px solid var(--ew-input-border);
+  font: inherit;
+  cursor: pointer;
+}
+
+.editor-workspace__action {
+  background: var(--ew-action-bg);
+  color: var(--ew-action-fg);
+  padding: 8px 12px;
+}
+
+.editor-workspace__action[disabled],
+.editor-workspace__toolbar-button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.editor-workspace__summary-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 20px 0;
+  color: var(--ew-muted);
+  font-size: 0.9rem;
+}
+
+.editor-workspace__summary-strip span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ew-focus) 8%, transparent 92%);
+}
+
+.editor-workspace__banner {
+  margin: 12px 20px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+
+.editor-workspace__banner--error {
+  background: var(--ew-error-bg);
+  color: var(--ew-error-fg);
+}
+
+.editor-workspace__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 20px 20px;
+  min-height: 0;
+}
+
+.editor-workspace__panel {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid var(--ew-border);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--ew-surface);
+}
+
+.editor-workspace__panel--workspace {
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-workspace__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ew-border);
+  background: var(--ew-soft);
+}
+
+.editor-workspace__panel-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.editor-workspace__panel-heading h2,
+.editor-workspace__modal-header h2,
+.editor-workspace__modal-preview-header h3 {
+  margin: 0;
+}
+
+.editor-workspace__panel-heading span,
+.editor-workspace__modal-preview-header span,
+.editor-workspace__editor-footer {
+  color: var(--ew-muted);
+}
+
+.editor-workspace__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ew-border);
+  background: color-mix(in srgb, var(--ew-bg) 97%, black 3%);
+}
+
+.editor-workspace__toolbar-button,
+.editor-workspace__modal-close {
+  background: transparent;
+  color: inherit;
+  padding: 8px 12px;
+}
+
+.editor-workspace__toolbar-button.is-active {
+  border-color: var(--ew-focus);
+  background: color-mix(in srgb, var(--ew-action-bg) 18%, transparent 82%);
+}
+
+.editor-workspace__rich-shell {
+  flex: 1;
+  min-height: 560px;
+  overflow: auto;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ew-bg) 98%, white 2%) 0%,
+    color-mix(in srgb, var(--ew-bg) 95%, white 5%) 100%
+  );
+}
+
+.editor-workspace__prosemirror {
+  min-height: 560px;
+  padding: 22px 24px 36px;
+  font:
+    400 16px/1.72 ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  outline: none;
+}
+
+.editor-workspace__prosemirror > * {
+  max-width: 880px;
+}
+
+.editor-workspace__prosemirror h1,
+.editor-workspace__prosemirror h2,
+.editor-workspace__prosemirror h3 {
+  line-height: 1.2;
+}
+
+.editor-workspace__prosemirror h1 {
+  font-size: 2rem;
+}
+
+.editor-workspace__prosemirror h2 {
+  margin-top: 1.8em;
+  font-size: 1.45rem;
+}
+
+.editor-workspace__prosemirror p {
+  margin: 0 0 1em;
+}
+
+.editor-workspace__prosemirror pre {
+  padding: 14px 16px;
+  overflow: auto;
+  border: 1px solid var(--ew-border);
+  border-radius: 8px;
+  background: var(--ew-code-bg);
+  font: 500 14px/1.55 var(--ew-editor-font);
+}
+
+.editor-workspace__prosemirror [data-papyr-block] {
+  position: relative;
+  display: block;
+  width: min(100%, 880px);
+  min-height: 120px;
+  margin: 18px 0;
+  padding: 46px 18px 18px;
+  border: 1px solid var(--ew-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ew-bg) 96%, var(--ew-focus) 4%);
+  cursor: pointer;
+}
+
+.editor-workspace__prosemirror [data-papyr-block]::before {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ew-focus) 14%, transparent 86%);
+  color: var(--ew-muted);
+  content: attr(data-papyr-block);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.editor-workspace__prosemirror [data-papyr-block]::after {
+  display: block;
+  color: var(--ew-fg);
+  content: attr(data-label);
+  font-weight: 650;
+}
+
+.editor-workspace__prosemirror [data-papyr-block].is-active,
+.editor-workspace__prosemirror .ProseMirror-selectednode[data-papyr-block] {
+  border-color: var(--ew-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ew-focus) 22%, transparent 78%);
+}
+
+.editor-workspace__prosemirror .editor-workspace__embedded-node {
+  width: min(100%, 880px);
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.editor-workspace__prosemirror .editor-workspace__embedded-node::before,
+.editor-workspace__prosemirror .editor-workspace__embedded-node::after {
+  content: none;
+}
+
+.editor-workspace__embedded-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ew-border);
+  background: color-mix(in srgb, var(--ew-bg) 94%, var(--ew-focus) 6%);
+}
+
+.editor-workspace__embedded-node-header span {
+  color: var(--ew-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.editor-workspace__embedded-node-header strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.92rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-workspace__embedded-node-preview {
+  min-height: 140px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--ew-bg) 98%, white 2%);
+}
+
+.editor-workspace__embedded-node-preview .diagram-card {
+  margin: 0;
+}
+
+.editor-workspace__embedded-node-preview table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.editor-workspace__embedded-node-preview th,
+.editor-workspace__embedded-node-preview td {
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  border: 1px solid color-mix(in srgb, var(--ew-border) 84%, transparent 16%);
+}
+
+.editor-workspace__embedded-node-preview svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.editor-workspace__source-recovery {
+  flex: 1;
+  min-height: 420px;
+}
+
+.editor-workspace__source-recovery label {
+  display: grid;
+  height: 100%;
+}
+
+.editor-workspace__source-recovery span {
+  padding: 10px 16px;
+  color: var(--ew-muted);
+  border-bottom: 1px solid var(--ew-border);
+}
+
+.editor-workspace__markdown {
+  width: 100%;
+  height: 100%;
+  padding: 18px 20px 22px;
+  font: 500 15px/var(--ew-editor-line-height) var(--ew-editor-font);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 2;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  resize: none;
+  border: 0;
+  color: var(--ew-fg);
+  caret-color: var(--ew-fg);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ew-bg) 98%, white 2%) 0%,
+    color-mix(in srgb, var(--ew-bg) 95%, white 5%) 100%
+  );
+  -webkit-text-fill-color: currentColor;
+}
+
+.editor-workspace__markdown--recovery {
+  min-height: 420px;
+}
+
+.editor-workspace__markdown:focus {
+  outline: none;
+}
+
+.editor-workspace__inline-embedded-error {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--ew-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ew-bg) 98%, white 2%);
+}
+
+.editor-workspace__inline-embedded-error {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  color: var(--ew-error-fg);
+  background: var(--ew-error-bg);
+}
+
+.editor-workspace__editor-footer {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--ew-border);
+  font-size: 0.88rem;
+}
+
+.editor-workspace__mermaid-source,
+.editor-workspace__modal-field input {
+  width: 100%;
+  border: 1px solid var(--ew-input-border);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.editor-workspace__mermaid-source {
+  min-height: 280px;
+  padding: 14px 16px;
+  resize: vertical;
+  font-family: var(--ew-editor-font);
+}
+
+.editor-workspace__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10, 14, 18, 0.56);
+}
+
+.editor-workspace__modal {
+  width: min(1100px, 100%);
+  max-height: min(90vh, 920px);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--ew-bg);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.22);
+}
+
+.editor-workspace__modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--ew-border);
+}
+
+.editor-workspace__modal-layout {
+  min-height: 0;
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px 20px;
+  overflow: auto;
+}
+
+.editor-workspace__modal-layout--split {
+  grid-template-rows: auto 1fr;
+}
+
+.editor-workspace__modal-mermaid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(280px, 1.1fr);
+  gap: 16px;
+}
+
+.editor-workspace__modal-field {
+  display: grid;
+  gap: 8px;
+}
+
+.editor-workspace__modal-field input {
+  padding: 10px 12px;
+}
+
+.editor-workspace__modal-preview-card {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid var(--ew-border);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.editor-workspace__modal-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ew-border);
+  background: var(--ew-soft);
+}
+
+.editor-workspace__modal-preview-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+
+.editor-workspace__modal-table {
+  display: grid;
+  gap: 16px;
+}
+
+.editor-workspace__modal-table-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.editor-workspace__modal-table-column,
+.editor-workspace__modal-table-row {
+  display: grid;
+  gap: 12px;
+}
+
+.editor-workspace__modal-table-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.editor-workspace__excalidraw {
+  min-height: 520px;
+  border: 1px solid var(--ew-border);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.editor-workspace__excalidraw--modal {
+  min-height: 620px;
+}
+
+.editor-workspace__empty {
+  padding: 16px;
+  color: var(--ew-muted);
+}
+
+@media (max-width: 1280px) {
+  .editor-workspace__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .editor-workspace__modal {
+    max-height: min(96vh, 960px);
+  }
+
+  .editor-workspace__modal-mermaid {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-workspace__excalidraw--modal {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 720px) {
+  .editor-workspace__topbar {
+    align-items: flex-start;
+    padding: 12px 14px;
+  }
+
+  .editor-workspace__title {
+    font-size: 1.12rem;
+  }
+
+  .editor-workspace__subtitle {
+    font-size: 0.84rem;
+  }
+
+  .editor-workspace__actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .editor-workspace__action {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .editor-workspace__summary-strip {
+    padding: 10px 14px 0;
+  }
+
+  .editor-workspace__banner {
+    margin: 10px 14px 0;
+  }
+
+  .editor-workspace__layout {
+    gap: 12px;
+    padding: 12px 14px 14px;
+  }
+
+  .editor-workspace__panel-header,
+  .editor-workspace__toolbar,
+  .editor-workspace__editor-footer {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .editor-workspace__toolbar-button,
+  .editor-workspace__modal-close {
+    padding: 7px 10px;
+    font-size: 0.88rem;
+  }
+
+  .editor-workspace__markdown {
+    padding: 12px;
+  }
+
+  .editor-workspace__mermaid-source {
+    min-height: 220px;
+  }
+
+  .editor-workspace__modal-backdrop {
+    padding: 12px;
+  }
+
+  .editor-workspace__modal-header,
+  .editor-workspace__modal-layout {
+    padding: 14px;
+  }
+}

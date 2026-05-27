@@ -1,0 +1,23 @@
+"$schema" = "./node_modules/wrangler/config-schema.json"
+
+name = "papyr-docs"
+main = "./src/worker.ts"
+compatibility_date = "2026-04-23"
+account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+workers_dev = false
+
+[[r2_buckets]]
+binding = "PAPYR_DOCS_R2"
+bucket_name = "REPLACE_WITH_R2_BUCKET_NAME"
+preview_bucket_name = "REPLACE_WITH_R2_PREVIEW_BUCKET_NAME"
+
+[assets]
+directory = "./dist/client"
+binding = "ASSETS"
+# raw markdown、API、SEO 用 static files は worker 経由で header を揃える
+run_worker_first = ["/api/*", "/articles/*.md", "/books/*.md", "/books/*/*.md", "/llms.txt", "/robots.txt", "/sitemap.xml"]
+# /articles, /books などの prerender 済みリストルートは {route}/index.html を解決させる
+html_handling = "auto-trailing-slash"
+# 詳細ページ (/articles/<slug> 等) はまだ prerender 対象外。SPA fallback で root index.html を
+# 返し、client がルーティングする。詳細ページ prerender が follow-up PR で揃ったら "404-page" に。
+not_found_handling = "single-page-application"

@@ -1,0 +1,44 @@
+{
+  "name": "@f12o/papyr-core",
+  "version": "2026.5.0",
+  "description": "Papyr core: ドキュメントモデル、ブロックスキーマ、レンダラーインターフェース",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "valibot": "^0.42.0"
+  },
+  "devDependencies": {
+    "@f12o/papyr-test-support": "workspace:*"
+  },
+  "license": "MIT",
+  "author": "f12o",
+  "homepage": "https://github.com/f4ah6o/papyr#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/f4ah6o/papyr.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/f4ah6o/papyr/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  }
+}
