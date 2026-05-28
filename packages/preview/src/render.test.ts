@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { PapyrDocument } from '@f12o/papyr-core';
-import { headingBlock, paragraphBlock } from '@f12o/papyr-core';
+import { codeBlock, headingBlock, paragraphBlock, tableBlock } from '@f12o/papyr-core';
 import {
   resolvePapyrViewSettings,
+  resolvePapyrSlideLayout,
   sceneToSvgMarkup,
   splitDocumentIntoViewSlides,
 } from './render.js';
@@ -66,6 +67,57 @@ describe('splitDocumentIntoViewSlides', () => {
 
     expect(slides).toHaveLength(3);
     expect(slides.map((slide) => slide[0]?.[1].id)).toEqual(['h1', 'h2-a', 'h2-b']);
+  });
+});
+
+describe('resolvePapyrSlideLayout', () => {
+  it('keeps text-only slides in the standard layout', () => {
+    expect(
+      resolvePapyrSlideLayout([
+        headingBlock({ id: 'h2', level: 2, content: [{ text: 'Text' }] }),
+        paragraphBlock({ id: 'p1', content: [{ text: 'Body' }] }),
+      ]),
+    ).toBe('standard');
+  });
+
+  it('uses the visual layout when embedded content is the only body content', () => {
+    expect(
+      resolvePapyrSlideLayout([
+        headingBlock({ id: 'h2', level: 2, content: [{ text: 'Table' }] }),
+        tableBlock({
+          id: 'table-1',
+          columns: [{ key: 'col-1', header: 'Metric' }],
+          rows: [[{ text: 'Build' }]],
+        }),
+      ]),
+    ).toBe('visual');
+  });
+
+  it('uses split-embedded when explanatory content sits beside an embedded block', () => {
+    expect(
+      resolvePapyrSlideLayout([
+        headingBlock({ id: 'h2', level: 2, content: [{ text: 'Diagram' }] }),
+        paragraphBlock({ id: 'p1', content: [{ text: 'Read this before the table.' }] }),
+        tableBlock({
+          id: 'table-1',
+          columns: [{ key: 'col-1', header: 'Metric' }],
+          rows: [[{ text: 'Build' }]],
+        }),
+      ]),
+    ).toBe('split-embedded');
+  });
+
+  it('treats code as explanatory content for split embedded slides', () => {
+    expect(
+      resolvePapyrSlideLayout([
+        codeBlock({ id: 'code-1', language: 'ts', source: 'const ok = true;' }),
+        tableBlock({
+          id: 'table-1',
+          columns: [{ key: 'col-1', header: 'Metric' }],
+          rows: [[{ text: 'Build' }]],
+        }),
+      ]),
+    ).toBe('split-embedded');
   });
 });
 
