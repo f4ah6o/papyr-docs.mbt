@@ -1011,6 +1011,8 @@ function hasBlockContent(block: Block): boolean {
     case 'Mermaid':
     case 'Excalidraw':
       return true;
+    default:
+      return true;
   }
 }
 
