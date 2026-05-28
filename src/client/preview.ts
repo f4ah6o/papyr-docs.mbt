@@ -16,6 +16,7 @@ export {
   type PapyrReferenceMetaItem,
   type PapyrViewerOptions,
   type PapyrSlide,
+  type PapyrSlideLayout,
   type PapyrSlideViewerOptions,
   type PapyrTocItem,
   type PapyrViewDensity,
@@ -25,4 +26,5 @@ export {
   type PapyrViewTheme,
   type RenderDocumentPreviewOptions,
   type RenderPapyrViewOptions,
+  resolvePapyrSlideLayout,
 } from '@f12o/papyr-preview';

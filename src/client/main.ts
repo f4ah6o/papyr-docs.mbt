@@ -777,6 +777,7 @@ async function renderSlidesPage(
   const supportsFullscreen = supportsFullscreenToggle(viewerEl, document);
 
   let disposed = false;
+  let slideRenderToken = 0;
   fullscreenButton.hidden = !supportsFullscreen;
 
   const isViewerFullscreen = (): boolean => {
@@ -820,6 +821,7 @@ async function renderSlidesPage(
 
   async function updateSlide(): Promise<void> {
     if (disposed || token !== state.renderToken) return;
+    const currentRenderToken = ++slideRenderToken;
     const slide = slides[currentSlideIndex];
     if (!slide) return;
 
@@ -839,10 +841,10 @@ async function renderSlidesPage(
       mode: 'slides',
       slide: currentSlideIndex + 1,
     });
-    if (disposed || token !== state.renderToken) return;
+    if (disposed || token !== state.renderToken || currentRenderToken !== slideRenderToken) return;
 
     await waitForLayoutFrames();
-    if (disposed || token !== state.renderToken) return;
+    if (disposed || token !== state.renderToken || currentRenderToken !== slideRenderToken) return;
 
     syncStageScale();
     frameEl.dataset.slideReady = 'true';

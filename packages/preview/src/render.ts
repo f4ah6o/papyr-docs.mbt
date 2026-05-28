@@ -50,6 +50,8 @@ export interface PapyrSlide {
   document: PapyrDocument;
 }
 
+export type PapyrSlideLayout = 'standard' | 'visual' | 'split-embedded';
+
 export interface PapyrSlideViewerOptions {
   document: PapyrDocument;
   slide?: number;
@@ -199,7 +201,7 @@ export function splitDocumentIntoViewSlides(blocks: Block[]): Block[][] {
 export function buildPapyrToc(doc: PapyrDocument): PapyrTocItem[] {
   return doc.blocks.flatMap((block) => {
     if (!isBlockKind(block, 'Heading')) return [];
-    const text = normalizeHeadingText(block[1].content);
+    const text = normalizeInlineText(block[1].content);
     if (!text) return [];
     return [{ id: block[1].id, level: block[1].level, text }];
   });
@@ -566,6 +568,11 @@ async function renderSlideDeckView(
   const selectedBlocks = slideGroups[selectedSlideIndex] ?? [];
   const slideTitle = resolveSlideTitle(doc, selectedBlocks, selectedSlideIndex);
   const titleSlide = settings.titleSlide && isTitleSlide(doc, selectedBlocks, selectedSlideIndex);
+  const contentBlocks =
+    titleSlide && isBlockKind(selectedBlocks[0], 'Heading')
+      ? selectedBlocks.slice(1)
+      : selectedBlocks;
+  const slideLayout = titleSlide ? 'standard' : resolvePapyrSlideLayout(contentBlocks);
 
   const root = document.createElement('section');
   decorateViewRoot(root, settings, 'slides');
@@ -578,6 +585,8 @@ async function renderSlideDeckView(
     : 'papyr-slide papyr-slide--content';
   slide.dataset.papyrDocumentId = doc.id;
   slide.dataset.papyrSlideTitle = slideTitle;
+  slide.dataset.papyrSlideLayout = slideLayout;
+  slide.classList.add(`papyr-slide--${slideLayout}`);
 
   if (titleSlide) {
     const header = document.createElement('header');
@@ -597,14 +606,47 @@ async function renderSlideDeckView(
     slide.appendChild(header);
   }
 
-  const blocks =
-    titleSlide && isBlockKind(selectedBlocks[0], 'Heading')
-      ? selectedBlocks.slice(1)
-      : selectedBlocks;
-  const rendered = await Promise.all(blocks.map((block) => renderBlock(block)));
-  for (const element of rendered) slide.appendChild(element);
+  if (slideLayout === 'split-embedded') {
+    await appendSplitEmbeddedSlideContent(slide, contentBlocks);
+  } else {
+    const rendered = await Promise.all(contentBlocks.map((block) => renderBlock(block)));
+    for (const element of rendered) slide.appendChild(element);
+  }
   root.appendChild(slide);
   return root;
+}
+
+export function resolvePapyrSlideLayout(blocks: Block[]): PapyrSlideLayout {
+  const contentBlocks = blocks.filter((block) => !isBlockKind(block, 'Heading'));
+  const hasEmbedded = contentBlocks.some(isEmbeddedBlock);
+  if (!hasEmbedded) return 'standard';
+  const hasTextContent = contentBlocks.some((block) => !isEmbeddedBlock(block) && hasBlockContent(block));
+  return hasTextContent ? 'split-embedded' : 'visual';
+}
+
+async function appendSplitEmbeddedSlideContent(slide: HTMLElement, blocks: Block[]): Promise<void> {
+  const headingBlocks = blocks.filter((block) => isBlockKind(block, 'Heading'));
+  const bodyBlocks = blocks.filter((block) => !isBlockKind(block, 'Heading'));
+  const textBlocks = bodyBlocks.filter((block) => !isEmbeddedBlock(block));
+  const visualBlocks = bodyBlocks.filter(isEmbeddedBlock);
+
+  const headings = await Promise.all(headingBlocks.map((block) => renderBlock(block)));
+  for (const heading of headings) slide.appendChild(heading);
+
+  const body = document.createElement('div');
+  body.className = 'papyr-slide__split';
+  const textColumn = document.createElement('div');
+  textColumn.className = 'papyr-slide__split-text';
+  const visualColumn = document.createElement('div');
+  visualColumn.className = 'papyr-slide__split-visual';
+
+  const renderedText = await Promise.all(textBlocks.map((block) => renderBlock(block)));
+  const renderedVisual = await Promise.all(visualBlocks.map((block) => renderBlock(block)));
+  textColumn.replaceChildren(...renderedText);
+  visualColumn.replaceChildren(...renderedVisual);
+  body.appendChild(textColumn);
+  body.appendChild(visualColumn);
+  slide.appendChild(body);
 }
 
 function decorateViewRoot(
@@ -921,7 +963,7 @@ function shouldSuppressLeadingTitle(doc: PapyrDocument, title?: string): boolean
   if (!title) return false;
   const [first] = doc.blocks;
   if (!isBlockKind(first, 'Heading') || first[1].level !== 1) return false;
-  return normalizeHeadingText(first[1].content) === normalizeText(title);
+  return normalizeInlineText(first[1].content) === normalizeText(title);
 }
 
 function resolveDocumentTitle(doc: PapyrDocument): string {
@@ -930,7 +972,7 @@ function resolveDocumentTitle(doc: PapyrDocument): string {
     (block): block is HeadingBlock => isBlockKind(block, 'Heading') && block[1].level === 1,
   );
   if (heading) {
-    const title = normalizeHeadingText(heading[1].content);
+    const title = normalizeInlineText(heading[1].content);
     if (title) return title;
   }
   return doc.id;
@@ -939,7 +981,7 @@ function resolveDocumentTitle(doc: PapyrDocument): string {
 function resolveSlideTitle(doc: PapyrDocument, blocks: Block[], index: number): string {
   const [first] = blocks;
   if (isBlockKind(first, 'Heading')) {
-    const title = normalizeHeadingText(first[1].content);
+    const title = normalizeInlineText(first[1].content);
     if (title) return title;
   }
   return index === 0 ? resolveDocumentTitle(doc) : `Slide ${index + 1}`;
@@ -949,14 +991,36 @@ function isTitleSlide(doc: PapyrDocument, blocks: Block[], index: number): boole
   if (index !== 0) return false;
   const [first] = blocks;
   if (!isBlockKind(first, 'Heading') || first[1].level !== 1) return false;
-  return normalizeHeadingText(first[1].content) === resolveDocumentTitle(doc);
+  return normalizeInlineText(first[1].content) === resolveDocumentTitle(doc);
+}
+
+function isEmbeddedBlock(block: Block): block is TableBlock | MermaidBlock | ExcalidrawBlock {
+  return block[0] === 'Table' || block[0] === 'Mermaid' || block[0] === 'Excalidraw';
+}
+
+function hasBlockContent(block: Block): boolean {
+  switch (block[0]) {
+    case 'Heading':
+    case 'Paragraph':
+      return normalizeInlineText(block[1].content) !== '';
+    case 'List':
+      return block[1].items.some((item) => item.blocks.some(hasBlockContent));
+    case 'Code':
+      return block[1].source.trim() !== '';
+    case 'Table':
+    case 'Mermaid':
+    case 'Excalidraw':
+      return true;
+    default:
+      return true;
+  }
 }
 
 function isSlideBoundary(block: Block): block is HeadingBlock {
   return isBlockKind(block, 'Heading') && block[1].level === 2;
 }
 
-function normalizeHeadingText(runs: Inline[]): string {
+function normalizeInlineText(runs: Inline[]): string {
   return normalizeText(runs.map((run) => run.text).join(''));
 }
 

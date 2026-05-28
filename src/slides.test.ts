@@ -59,6 +59,14 @@ describe('slide view search params', () => {
         view: 'document',
       }),
     ).toBe('/articles/demo');
+
+    expect(
+      buildSlideViewHref('/articles/demo', '?q=keep', {
+        view: 'slides',
+        slide: 3,
+        viewportId: '1920x1080',
+      }),
+    ).toBe('/articles/demo?q=keep&view=slides&slide=3&viewport=1920x1080');
   });
 
   it('detects slide view and clamps indexes and viewport fallbacks', () => {
