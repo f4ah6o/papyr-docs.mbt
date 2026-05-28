@@ -201,7 +201,7 @@ export function splitDocumentIntoViewSlides(blocks: Block[]): Block[][] {
 export function buildPapyrToc(doc: PapyrDocument): PapyrTocItem[] {
   return doc.blocks.flatMap((block) => {
     if (!isBlockKind(block, 'Heading')) return [];
-    const text = normalizeHeadingText(block[1].content);
+    const text = normalizeInlineText(block[1].content);
     if (!text) return [];
     return [{ id: block[1].id, level: block[1].level, text }];
   });
@@ -963,7 +963,7 @@ function shouldSuppressLeadingTitle(doc: PapyrDocument, title?: string): boolean
   if (!title) return false;
   const [first] = doc.blocks;
   if (!isBlockKind(first, 'Heading') || first[1].level !== 1) return false;
-  return normalizeHeadingText(first[1].content) === normalizeText(title);
+  return normalizeInlineText(first[1].content) === normalizeText(title);
 }
 
 function resolveDocumentTitle(doc: PapyrDocument): string {
@@ -972,7 +972,7 @@ function resolveDocumentTitle(doc: PapyrDocument): string {
     (block): block is HeadingBlock => isBlockKind(block, 'Heading') && block[1].level === 1,
   );
   if (heading) {
-    const title = normalizeHeadingText(heading[1].content);
+    const title = normalizeInlineText(heading[1].content);
     if (title) return title;
   }
   return doc.id;
@@ -981,7 +981,7 @@ function resolveDocumentTitle(doc: PapyrDocument): string {
 function resolveSlideTitle(doc: PapyrDocument, blocks: Block[], index: number): string {
   const [first] = blocks;
   if (isBlockKind(first, 'Heading')) {
-    const title = normalizeHeadingText(first[1].content);
+    const title = normalizeInlineText(first[1].content);
     if (title) return title;
   }
   return index === 0 ? resolveDocumentTitle(doc) : `Slide ${index + 1}`;
@@ -991,7 +991,7 @@ function isTitleSlide(doc: PapyrDocument, blocks: Block[], index: number): boole
   if (index !== 0) return false;
   const [first] = blocks;
   if (!isBlockKind(first, 'Heading') || first[1].level !== 1) return false;
-  return normalizeHeadingText(first[1].content) === resolveDocumentTitle(doc);
+  return normalizeInlineText(first[1].content) === resolveDocumentTitle(doc);
 }
 
 function isEmbeddedBlock(block: Block): block is TableBlock | MermaidBlock | ExcalidrawBlock {
@@ -1002,7 +1002,7 @@ function hasBlockContent(block: Block): boolean {
   switch (block[0]) {
     case 'Heading':
     case 'Paragraph':
-      return normalizeHeadingText(block[1].content) !== '';
+      return normalizeInlineText(block[1].content) !== '';
     case 'List':
       return block[1].items.some((item) => item.blocks.some(hasBlockContent));
     case 'Code':
@@ -1020,7 +1020,7 @@ function isSlideBoundary(block: Block): block is HeadingBlock {
   return isBlockKind(block, 'Heading') && block[1].level === 2;
 }
 
-function normalizeHeadingText(runs: Inline[]): string {
+function normalizeInlineText(runs: Inline[]): string {
   return normalizeText(runs.map((run) => run.text).join(''));
 }
 
