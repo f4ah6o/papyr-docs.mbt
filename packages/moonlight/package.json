@@ -1,0 +1,34 @@
+{
+  "name": "@f12o/papyr-moonlight",
+  "version": "2026.5.0",
+  "description": "Papyr-vendored Moonlight SVG editor",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./js/api.js",
+      "types": "./js/api.d.ts"
+    }
+  },
+  "files": [
+    "js",
+    "_build/js/release/build/api"
+  ],
+  "scripts": {
+    "build": "pnpm moon:build:compat",
+    "moon:build:compat": "moon build --target js --release && (test -e _build || ln -s target _build) && (test -e target || ln -s _build target)",
+    "test": "moon test src/model && moon test src/render",
+    "typecheck": "moon check"
+  },
+  "license": "MIT",
+  "author": "mizchi, Papyr contributors",
+  "homepage": "https://github.com/f4ah6o/papyr#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/f4ah6o/papyr.git",
+    "directory": "packages/moonlight"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  }
+}

@@ -2,10 +2,10 @@
 kind: chapter
 slug: custom-editor
 title: Custom editor の構成
-summary: VS Code 上で Markdown / preview / Mermaid / Excalidraw を同期する。
+summary: VS Code 上で Markdown / preview / Mermaid / Moonlight を同期する。
 emoji: 🪟
 published: true
-topics: [vscode, mermaid, excalidraw]
+topics: [vscode, mermaid, moonlight]
 chapterOrder: 1
 updatedAt: 2026-04-25T00:00:00.000Z
 ---
@@ -18,6 +18,6 @@ webview 側では次の 3 つを同時に表示します。
 
 - Markdown textarea
 - `renderDocumentPreview` による preview
-- Mermaid / Excalidraw block の inspector
+- Mermaid / Moonlight block の inspector
 
 Markdown は `parseMarkdown` / `serializeDocument` で `PapyrDocument` と相互変換し、diagram 追加や更新は `@f12o/papyr-editor` の helper で block を直接編集します。つまり extension は「VS Code に閉じた独自 format」を持たず、**常に PapyrDocument を中間表現にする** ことで preview や他 package と整合を取っています。

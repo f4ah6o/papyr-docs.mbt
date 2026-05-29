@@ -26,17 +26,16 @@
     "@f12o/papyr-core": "workspace:*",
     "@f12o/papyr-editor": "workspace:*",
     "@f12o/papyr-markdown": "workspace:*",
+    "@f12o/papyr-moonlight": "workspace:*",
     "@f12o/papyr-preview": "workspace:*",
     "@tiptap/react": "^2.10.0",
     "@tiptap/starter-kit": "^2.10.0"
   },
   "peerDependencies": {
-    "@excalidraw/excalidraw": "^0.17.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
   },
   "devDependencies": {
-    "@excalidraw/excalidraw": "^0.17.6",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",

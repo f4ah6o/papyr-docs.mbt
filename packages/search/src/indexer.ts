@@ -1,39 +1,44 @@
-import type { Block, Inline, ListBlock, ListItem, PapyrDocument } from '@f12o/papyr-core';
-import { blockPayload, isBlockKind } from '@f12o/papyr-core';
+import type {
+  Block,
+  Inline,
+  ListBlock,
+  ListItem,
+  PapyrDocument,
+} from "@f12o/papyr-core";
+import { blockPayload, isBlockKind } from "@f12o/papyr-core";
 
 function inlineText(inline: Inline[]): string {
-  return inline.map((i) => i.text).join('');
+  return inline.map((i) => i.text).join("");
 }
 
 function listItemText(item: ListItem): string {
-  return item.blocks.map(blockText).join('\n');
+  return item.blocks.map(blockText).join("\n");
 }
 
 function listText(list: ListBlock): string {
-  return blockPayload(list).items.map(listItemText).join('\n');
+  return blockPayload(list).items.map(listItemText).join("\n");
 }
 
 export function blockText(block: Block): string {
   switch (block[0]) {
-    case 'Paragraph':
-    case 'Heading':
+    case "Paragraph":
+    case "Heading":
       return inlineText(block[1].content);
-    case 'List':
+    case "List":
       return listText(block);
-    case 'Code':
+    case "Code":
       return block[1].source;
-    case 'Mermaid':
+    case "Mermaid":
       return block[1].source;
-    case 'Table':
+    case "Table":
       return block[1].rows
         .flat()
         .map((c) => c.text)
-        .join(' ');
-    case 'Excalidraw':
-      return block[1].elements
-        .map((el) => (isRecord(el) && typeof el.text === 'string' ? el.text : ''))
+        .join(" ");
+    case "Moonlight":
+      return [block[1].caption, ...svgTextContent(block[1].svg)]
         .filter(Boolean)
-        .join(' ');
+        .join(" ");
   }
 }
 
@@ -56,8 +61,11 @@ export interface IndexableDocument {
 }
 
 function flattenBlock(block: Block): Block[] {
-  if (!isBlockKind(block, 'List')) return [block];
-  return [block, ...block[1].items.flatMap((item) => item.blocks.flatMap(flattenBlock))];
+  if (!isBlockKind(block, "List")) return [block];
+  return [
+    block,
+    ...block[1].items.flatMap((item) => item.blocks.flatMap(flattenBlock)),
+  ];
 }
 
 export function toIndexable(doc: PapyrDocument): IndexableDocument {
@@ -68,14 +76,14 @@ export function toIndexable(doc: PapyrDocument): IndexableDocument {
     text: blockText(b),
   }));
   const headings = allBlocks
-    .filter((b) => isBlockKind(b, 'Heading'))
+    .filter((b) => isBlockKind(b, "Heading"))
     .map(blockText)
-    .join('\n');
+    .join("\n");
   return {
     id: doc.id,
-    title: doc.title ?? '',
+    title: doc.title ?? "",
     headings,
-    body: doc.blocks.map(blockText).join('\n'),
+    body: doc.blocks.map(blockText).join("\n"),
     blocks,
   };
 }
@@ -84,15 +92,36 @@ function blockSnapshotType(block: Block): BlockSnapshotType {
   return block[0].toLowerCase() as BlockSnapshotType;
 }
 
-function isRecord(input: unknown): input is Record<string, unknown> {
-  return typeof input === 'object' && input !== null && !Array.isArray(input);
+function svgTextContent(svg: string): string[] {
+  return Array.from(
+    svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/gi),
+    ([, value]) =>
+      decodeBasicEntities(
+        String(value)
+          .replace(/<[^>]+>/g, "")
+          .trim(),
+      ),
+  ).filter((value) => value.length > 0);
+}
+
+function decodeBasicEntities(value: string): string {
+  return value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
 }
 
 /**
  * Returns a short fragment of `text` around the first occurrence of any term in `query`.
  * Case-insensitive. Returns null if no term matches.
  */
-export function extractSnippet(text: string, query: string, context = 40): string | null {
+export function extractSnippet(
+  text: string,
+  query: string,
+  context = 40,
+): string | null {
   const terms = query
     .toLowerCase()
     .split(/\s+/)
@@ -101,7 +130,7 @@ export function extractSnippet(text: string, query: string, context = 40): strin
   if (terms.length === 0) return null;
   const lower = text.toLowerCase();
   let earliest = -1;
-  let matchedTerm = '';
+  let matchedTerm = "";
   for (const term of terms) {
     const idx = lower.indexOf(term);
     if (idx >= 0 && (earliest < 0 || idx < earliest)) {
@@ -112,7 +141,7 @@ export function extractSnippet(text: string, query: string, context = 40): strin
   if (earliest < 0) return null;
   const start = Math.max(0, earliest - context);
   const end = Math.min(text.length, earliest + matchedTerm.length + context);
-  const prefix = start > 0 ? '…' : '';
-  const suffix = end < text.length ? '…' : '';
+  const prefix = start > 0 ? "…" : "";
+  const suffix = end < text.length ? "…" : "";
   return `${prefix}${text.slice(start, end)}${suffix}`;
 }

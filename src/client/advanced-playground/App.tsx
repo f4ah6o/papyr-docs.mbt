@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createOpfsWorkspaceStore,
   type WorkspaceStore,
   type WorkspaceSummary,
-} from '@f12o/papyr-adapter-opfs';
-import { EditorWorkspace } from '@f12o/papyr-editor-ui';
-import '@f12o/papyr-editor-ui/styles.css';
-import { parseMarkdown, serializeDocument } from '@f12o/papyr-markdown';
-import { renderPapyrView } from '@f12o/papyr-preview';
-import { createMiniSearchAdapter } from '@f12o/papyr-search';
+} from "@f12o/papyr-adapter-opfs";
+import { EditorWorkspace } from "@f12o/papyr-editor-ui";
+import "@f12o/papyr-editor-ui/styles.css";
+import { parseMarkdown, serializeDocument } from "@f12o/papyr-markdown";
+import { renderPapyrView } from "@f12o/papyr-preview";
+import { createMiniSearchAdapter } from "@f12o/papyr-search";
 import {
   buildWorkspaceBookPayload,
   createStarterWorkspace,
@@ -24,32 +24,45 @@ import {
   type WorkspacePublicationMeta,
   type WorkspacePublicationSummary,
   type WorkspaceState,
-} from '@f12o/papyr-workspace';
-import type { PapyrDocument } from '@f12o/papyr-core';
+} from "@f12o/papyr-workspace";
+import type { PapyrDocument } from "@f12o/papyr-core";
 import {
   registerAdvancedPlaygroundWebMcp,
   type AdvancedPlaygroundWebMcpContext,
-} from './webmcp.js';
+} from "./webmcp.js";
 
 type PreviewRoute =
-  | { name: 'home' }
-  | { name: 'articles' }
-  | { name: 'books' }
-  | { name: 'article'; slug: string }
-  | { name: 'book'; slug: string }
-  | { name: 'chapter'; bookSlug: string; chapterSlug: string }
-  | { name: 'search' };
+  | { name: "home" }
+  | { name: "articles" }
+  | { name: "books" }
+  | { name: "article"; slug: string }
+  | { name: "book"; slug: string }
+  | { name: "chapter"; bookSlug: string; chapterSlug: string }
+  | { name: "search" };
 
-export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: WorkspaceStore }) {
-  const store = useMemo(() => injectedStore ?? createOpfsWorkspaceStore(), [injectedStore]);
-  const [workspaceSummaries, setWorkspaceSummaries] = useState<WorkspaceSummary[]>([]);
+export function AdvancedPlaygroundApp({
+  store: injectedStore,
+}: {
+  store?: WorkspaceStore;
+}) {
+  const store = useMemo(
+    () => injectedStore ?? createOpfsWorkspaceStore(),
+    [injectedStore],
+  );
+  const [workspaceSummaries, setWorkspaceSummaries] = useState<
+    WorkspaceSummary[]
+  >([]);
   const [workspace, setWorkspace] = useState<WorkspaceState | null>(null);
-  const [selectedDocumentId, setSelectedDocumentId] = useState('');
+  const [selectedDocumentId, setSelectedDocumentId] = useState("");
   const [sourceById, setSourceById] = useState<Record<string, string>>({});
-  const [previewRoute, setPreviewRoute] = useState<PreviewRoute>({ name: 'home' });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [status, setStatus] = useState('Loading workspace...');
-  const [statusTone, setStatusTone] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [previewRoute, setPreviewRoute] = useState<PreviewRoute>({
+    name: "home",
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [status, setStatus] = useState("Loading workspace...");
+  const [statusTone, setStatusTone] = useState<"idle" | "saved" | "error">(
+    "idle",
+  );
   const [publishResult, setPublishResult] = useState<{
     siteUrl: string;
     updatedAt: string;
@@ -57,15 +70,18 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
   } | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement | null>(null);
-  const activeWorkspaceIdRef = useRef('');
+  const activeWorkspaceIdRef = useRef("");
   const saveRequestRef = useRef(0);
   const webMcpContextRef = useRef<AdvancedPlaygroundWebMcpContext | null>(null);
 
   useEffect(() => {
-    activeWorkspaceIdRef.current = workspace?.manifest.id ?? '';
+    activeWorkspaceIdRef.current = workspace?.manifest.id ?? "";
   }, [workspace?.manifest.id]);
 
-  useEffect(() => registerAdvancedPlaygroundWebMcp(() => webMcpContextRef.current), []);
+  useEffect(
+    () => registerAdvancedPlaygroundWebMcp(() => webMcpContextRef.current),
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +92,7 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
         if (cancelled) return;
         if (summaries.length === 0) {
           const starter = createStarterWorkspace({
-            name: '来訪者向け docs site',
+            name: "来訪者向け docs site",
           });
           await store.createWorkspace(starter);
           if (cancelled) return;
@@ -90,10 +106,10 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
           ]);
           setSourceById(toSourceMap(starter.documents));
           setSelectedDocumentId(
-            starter.manifest.documentOrder[0] ?? starter.documents[0]?.id ?? '',
+            starter.manifest.documentOrder[0] ?? starter.documents[0]?.id ?? "",
           );
-          setStatus('Created a starter workspace in OPFS.');
-          setStatusTone('saved');
+          setStatus("Created a starter workspace in OPFS.");
+          setStatusTone("saved");
           return;
         }
 
@@ -107,15 +123,17 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
         setWorkspace(normalized);
         setSourceById(toSourceMap(normalized.documents));
         setSelectedDocumentId(
-          normalized.manifest.documentOrder[0] ?? normalized.documents[0]?.id ?? '',
+          normalized.manifest.documentOrder[0] ??
+            normalized.documents[0]?.id ??
+            "",
         );
-        setStatus('OPFS から workspace を読み込みました。');
-        setStatusTone('saved');
+        setStatus("OPFS から workspace を読み込みました。");
+        setStatusTone("saved");
       } catch (error) {
         if (cancelled) return;
         setBootError(asMessage(error));
-        setStatus('Workspace の初期化に失敗しました。');
-        setStatusTone('error');
+        setStatus("Workspace の初期化に失敗しました。");
+        setStatusTone("error");
       }
     };
 
@@ -127,7 +145,10 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
 
   const derived = useMemo(() => {
     if (!workspace)
-      return { workspace: null as WorkspaceState | null, error: null as string | null };
+      return {
+        workspace: null as WorkspaceState | null,
+        error: null as string | null,
+      };
     try {
       const documents = workspace.documents.map((document) => {
         const source = sourceById[document.id] ?? serializeDocument(document);
@@ -156,7 +177,10 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
   }, [sourceById, workspace]);
 
   const publicationSummaries = useMemo(
-    () => (derived.workspace ? listWorkspacePublicationSummaries(derived.workspace.documents) : []),
+    () =>
+      derived.workspace
+        ? listWorkspacePublicationSummaries(derived.workspace.documents)
+        : [],
     [derived.workspace],
   );
   const publicationCounts = useMemo(
@@ -176,17 +200,21 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
   );
   const selectedDocument = useMemo(() => {
     if (!workspace) return null;
-    return workspace.documents.find((document) => document.id === selectedDocumentId) ?? null;
+    return (
+      workspace.documents.find(
+        (document) => document.id === selectedDocumentId,
+      ) ?? null
+    );
   }, [selectedDocumentId, workspace]);
   const selectedPublication = selectedDocument
     ? getWorkspacePublicationMeta(selectedDocument)
     : null;
   const selectedSource = selectedDocument
     ? (sourceById[selectedDocument.id] ?? serializeDocument(selectedDocument))
-    : '';
+    : "";
   const hasBooks =
     workspace?.documents.some(
-      (document) => getWorkspacePublicationMeta(document)?.kind === 'book',
+      (document) => getWorkspacePublicationMeta(document)?.kind === "book",
     ) ?? false;
   const publishReady = Boolean(
     workspace?.publishTarget?.endpoint && workspace.publishTarget.workspaceId,
@@ -206,7 +234,7 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
   useEffect(() => {
     if (derived.error) {
       setStatus(derived.error);
-      setStatusTone('error');
+      setStatusTone("error");
       return;
     }
     if (!derived.workspace) return;
@@ -227,8 +255,8 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
             return;
           }
           setWorkspaceSummaries(summaries);
-          setStatus('OPFS に保存しました。');
-          setStatusTone('saved');
+          setStatus("OPFS に保存しました。");
+          setStatusTone("saved");
         })
         .catch((error) => {
           if (
@@ -239,12 +267,12 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
             return;
           }
           setStatus(asMessage(error));
-          setStatusTone('error');
+          setStatusTone("error");
         });
     }, 500);
 
-    setStatus('保存中...');
-    setStatusTone('idle');
+    setStatus("保存中...");
+    setStatusTone("idle");
     return () => {
       cancelled = true;
       window.clearTimeout(timeout);
@@ -279,9 +307,13 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
 
   const activePreviewWorkspace = derived.workspace ?? workspace;
   const previewWorkspace =
-    activePreviewWorkspace.documents.length > 0 ? activePreviewWorkspace : workspace;
+    activePreviewWorkspace.documents.length > 0
+      ? activePreviewWorkspace
+      : workspace;
 
-  const updateWorkspace = (recipe: (current: WorkspaceState) => WorkspaceState) => {
+  const updateWorkspace = (
+    recipe: (current: WorkspaceState) => WorkspaceState,
+  ) => {
     setWorkspace((current) => (current ? recipe(current) : current));
   };
 
@@ -312,9 +344,9 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
     setWorkspaceSummaries(await store.listWorkspaces());
     setSourceById(toSourceMap(normalized.documents));
     setSelectedDocumentId(
-      normalized.manifest.documentOrder[0] ?? normalized.documents[0]?.id ?? '',
+      normalized.manifest.documentOrder[0] ?? normalized.documents[0]?.id ?? "",
     );
-    setPreviewRoute({ name: 'home' });
+    setPreviewRoute({ name: "home" });
     setPublishResult(null);
     return {
       id: normalized.manifest.id,
@@ -324,7 +356,8 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
 
   const handleCreateWorkspace = async (name?: string) => {
     const created = createStarterWorkspace({
-      name: name?.trim() || `来訪者向け docs site ${workspaceSummaries.length + 1}`,
+      name:
+        name?.trim() || `来訪者向け docs site ${workspaceSummaries.length + 1}`,
     });
     await store.createWorkspace(created);
     return activateWorkspace(created);
@@ -337,11 +370,11 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
   };
 
   const handleAddDocument = (kind: WorkspacePublicationKind) => {
-    if (!workspace) throw new Error('Workspace is not ready.');
-    if (kind === 'chapter' && !hasBooks) {
-      setStatus('chapter を追加する前に book を作ります。');
-      setStatusTone('error');
-      throw new Error('chapter を追加する前に book を作ります。');
+    if (!workspace) throw new Error("Workspace is not ready.");
+    if (kind === "chapter" && !hasBooks) {
+      setStatus("chapter を追加する前に book を作ります。");
+      setStatusTone("error");
+      throw new Error("chapter を追加する前に book を作ります。");
     }
 
     const next = createWorkspaceDocument(kind, workspace.documents);
@@ -367,26 +400,32 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
 
   const handleDeleteDocument = (documentId: string) => {
     if (!workspace) return;
-    const target = workspace.documents.find((document) => document.id === documentId);
+    const target = workspace.documents.find(
+      (document) => document.id === documentId,
+    );
     const publication = target ? getWorkspacePublicationMeta(target) : null;
-    if (publication?.kind === 'book') {
+    if (publication?.kind === "book") {
       const hasLinkedChapters = workspace.documents.some((document) => {
         const meta = getWorkspacePublicationMeta(document);
-        return meta?.kind === 'chapter' && meta.bookId === documentId;
+        return meta?.kind === "chapter" && meta.bookId === documentId;
       });
       if (hasLinkedChapters) {
-        setStatus('Delete chapters before deleting the book.');
-        setStatusTone('error');
+        setStatus("Delete chapters before deleting the book.");
+        setStatusTone("error");
         return;
       }
     }
 
-    const remaining = workspace.documents.filter((document) => document.id !== documentId);
+    const remaining = workspace.documents.filter(
+      (document) => document.id !== documentId,
+    );
     setWorkspace({
       ...workspace,
       manifest: {
         ...touchManifest(workspace.manifest),
-        documentOrder: workspace.manifest.documentOrder.filter((id) => id !== documentId),
+        documentOrder: workspace.manifest.documentOrder.filter(
+          (id) => id !== documentId,
+        ),
       },
       documents: remaining,
     });
@@ -395,26 +434,31 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
       delete next[documentId];
       return next;
     });
-    setSelectedDocumentId(remaining[0]?.id ?? '');
+    setSelectedDocumentId(remaining[0]?.id ?? "");
   };
 
   const handleExport = () => {
     if (!derived.workspace) {
-      setStatus('export の前に markdown error を直してください。');
-      setStatusTone('error');
+      setStatus("export の前に markdown error を直してください。");
+      setStatusTone("error");
       return;
     }
     const bundle = serializeWorkspaceBundle(derived.workspace);
-    downloadJson(`${derived.workspace.manifest.id}.papyr-workspace.json`, bundle);
-    setStatus('Workspace bundle をダウンロードしました。');
-    setStatusTone('saved');
+    downloadJson(
+      `${derived.workspace.manifest.id}.papyr-workspace.json`,
+      bundle,
+    );
+    setStatus("Workspace bundle をダウンロードしました。");
+    setStatusTone("saved");
   };
 
   const handleImportClick = () => {
     importRef.current?.click();
   };
 
-  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportFile = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
@@ -423,42 +467,48 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
       setWorkspace(imported);
       setWorkspaceSummaries(await store.listWorkspaces());
       setSourceById(toSourceMap(imported.documents));
-      setSelectedDocumentId(imported.manifest.documentOrder[0] ?? imported.documents[0]?.id ?? '');
-      setPreviewRoute({ name: 'home' });
-      setStatus(`Workspace を ${imported.manifest.id} として OPFS に import しました。`);
-      setStatusTone('saved');
+      setSelectedDocumentId(
+        imported.manifest.documentOrder[0] ?? imported.documents[0]?.id ?? "",
+      );
+      setPreviewRoute({ name: "home" });
+      setStatus(
+        `Workspace を ${imported.manifest.id} として OPFS に import しました。`,
+      );
+      setStatusTone("saved");
     } catch (error) {
       setStatus(asMessage(error));
-      setStatusTone('error');
+      setStatusTone("error");
     } finally {
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
   const handlePublish = async () => {
     if (!derived.workspace) {
-      setStatus('publish の前に markdown error を直してください。');
-      setStatusTone('error');
-      throw new Error('publish の前に markdown error を直してください。');
+      setStatus("publish の前に markdown error を直してください。");
+      setStatusTone("error");
+      throw new Error("publish の前に markdown error を直してください。");
     }
     const target = derived.workspace.publishTarget;
     if (!target?.endpoint || !target.workspaceId) {
-      setStatus('publish には endpoint と workspace id が必要です。');
-      setStatusTone('error');
-      throw new Error('publish には endpoint と workspace id が必要です。');
+      setStatus("publish には endpoint と workspace id が必要です。");
+      setStatusTone("error");
+      throw new Error("publish には endpoint と workspace id が必要です。");
     }
 
     try {
       const response = await fetch(resolvePublishUrl(target), {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'content-type': 'application/json',
+          "content-type": "application/json",
           ...(target.token ? { authorization: `Bearer ${target.token}` } : {}),
         },
         body: JSON.stringify(serializeWorkspaceBundle(derived.workspace)),
       });
       if (!response.ok) {
-        throw new Error(`publish failed: ${response.status} ${await response.text()}`);
+        throw new Error(
+          `publish failed: ${response.status} ${await response.text()}`,
+        );
       }
       const payload = (await response.json()) as {
         siteUrl: string;
@@ -466,18 +516,21 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
         publishedDocumentCount: number;
       };
       setPublishResult(payload);
-      setStatus('Workspace を publish しました。');
-      setStatusTone('saved');
+      setStatus("Workspace を publish しました。");
+      setStatusTone("saved");
       return payload;
     } catch (error) {
       setStatus(asMessage(error));
-      setStatusTone('error');
+      setStatusTone("error");
       throw error;
     }
   };
 
-  const navigatePreview = (route: PreviewRoute, options: { query?: string } = {}) => {
-    if (typeof options.query === 'string') {
+  const navigatePreview = (
+    route: PreviewRoute,
+    options: { query?: string } = {},
+  ) => {
+    if (typeof options.query === "string") {
       setSearchQuery(options.query);
     }
     setPreviewRoute(route);
@@ -492,9 +545,12 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
       documentCount: workspace.documents.length,
       publicationCount: publicationSummaries.length,
       publishConfigured: Boolean(
-        workspace.publishTarget?.endpoint && workspace.publishTarget.workspaceId,
+        workspace.publishTarget?.endpoint &&
+        workspace.publishTarget.workspaceId,
       ),
-      ...(publishResult?.siteUrl ? { lastPublishedSiteUrl: publishResult.siteUrl } : {}),
+      ...(publishResult?.siteUrl
+        ? { lastPublishedSiteUrl: publishResult.siteUrl }
+        : {}),
     }),
     listWorkspaces: () =>
       workspaceSummaries.map((summary) => ({
@@ -515,7 +571,9 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
       if (!derived.workspace || !query.trim()) return [];
       const adapter = createMiniSearchAdapter();
       for (const document of derived.workspace.documents) adapter.add(document);
-      const summariesById = new Map(publicationSummaries.map((summary) => [summary.id, summary]));
+      const summariesById = new Map(
+        publicationSummaries.map((summary) => [summary.id, summary]),
+      );
       return adapter
         .search(query.trim())
         .filter((result) => summariesById.has(result.id))
@@ -545,18 +603,31 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
           <p className="eyebrow">advanced playground</p>
           <h1>browser 上で組み立てる docs site workspace</h1>
           <p className="hero__lead">
-            browser の中で複数 document の docs site を組み立て、OPFS に保存し、 local preview
-            を見ながら bundle の export や外部 Papyr endpoint への publish まで進めます。
+            browser の中で複数 document の docs site を組み立て、OPFS に保存し、
+            local preview を見ながら bundle の export や外部 Papyr endpoint への
+            publish まで進めます。
           </p>
         </div>
         <div className="advanced-playground__hero-actions">
-          <button type="button" className="button" onClick={() => void handleCreateWorkspace()}>
+          <button
+            type="button"
+            className="button"
+            onClick={() => void handleCreateWorkspace()}
+          >
             新しい workspace
           </button>
-          <button type="button" className="button button--secondary" onClick={handleExport}>
+          <button
+            type="button"
+            className="button button--secondary"
+            onClick={handleExport}
+          >
             bundle を export
           </button>
-          <button type="button" className="button button--secondary" onClick={handleImportClick}>
+          <button
+            type="button"
+            className="button button--secondary"
+            onClick={handleImportClick}
+          >
             bundle を import
           </button>
           <input
@@ -570,7 +641,9 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
       </section>
 
       <section className="advanced-playground__status">
-        <span className={`advanced-playground__status-pill is-${statusTone}`}>{status}</span>
+        <span className={`advanced-playground__status-pill is-${statusTone}`}>
+          {status}
+        </span>
         {publishResult ? (
           <a
             href={publishResult.siteUrl}
@@ -583,7 +656,10 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
         ) : null}
       </section>
 
-      <section className="advanced-playground__workflow" aria-label="Advanced playground workflow">
+      <section
+        className="advanced-playground__workflow"
+        aria-label="Advanced playground workflow"
+      >
         <article className="panel advanced-playground__workflow-card">
           <div className="advanced-playground__section-copy">
             <p className="eyebrow">step 1</p>
@@ -602,7 +678,9 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
           <div className="advanced-playground__section-copy">
             <p className="eyebrow">step 2</p>
             <h2>Content</h2>
-            <p>article、book、chapter を追加して、editor で metadata を詰めます。</p>
+            <p>
+              article、book、chapter を追加して、editor で metadata を詰めます。
+            </p>
           </div>
           <strong className="advanced-playground__workflow-value">
             {publicationSummaries.length} 件
@@ -626,14 +704,16 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
             <button
               type="button"
               className="button button--secondary"
-              onClick={() => navigatePreview({ name: 'home' })}
+              onClick={() => navigatePreview({ name: "home" })}
             >
               home preview
             </button>
             <button
               type="button"
               className="button button--secondary"
-              onClick={() => navigatePreview({ name: 'search' }, { query: searchQuery })}
+              onClick={() =>
+                navigatePreview({ name: "search" }, { query: searchQuery })
+              }
             >
               search preview
             </button>
@@ -646,10 +726,14 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
             <p>local preview が固まってから endpoint を設定します。</p>
           </div>
           <strong className="advanced-playground__workflow-value">
-            {publishReady ? '設定済み' : 'endpoint 未設定'}
+            {publishReady ? "設定済み" : "endpoint 未設定"}
           </strong>
           <div className="advanced-playground__workflow-meta">
-            <span>{publishReady ? 'publish できます' : 'endpoint と workspace id を入れます'}</span>
+            <span>
+              {publishReady
+                ? "publish できます"
+                : "endpoint と workspace id を入れます"}
+            </span>
             {publishResult ? (
               <span>最終 publish: {publishResult.updatedAt.slice(0, 10)}</span>
             ) : null}
@@ -664,7 +748,10 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
               <div className="advanced-playground__section-copy">
                 <p className="eyebrow">workspaces</p>
                 <h2>OPFS</h2>
-                <p>{workspaceSummaries.length} 件の browser-local workspace snapshot です。</p>
+                <p>
+                  {workspaceSummaries.length} 件の browser-local workspace
+                  snapshot です。
+                </p>
               </div>
             </div>
             <div className="advanced-playground__workspace-list">
@@ -673,7 +760,7 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
                   key={summary.id}
                   type="button"
                   className={`advanced-playground__workspace-item${
-                    workspace.manifest.id === summary.id ? ' is-active' : ''
+                    workspace.manifest.id === summary.id ? " is-active" : ""
                   }`}
                   onClick={() => void handleOpenWorkspace(summary.id)}
                 >
@@ -689,7 +776,10 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
               <div className="advanced-playground__section-copy">
                 <p className="eyebrow">documents</p>
                 <h2>{workspace.manifest.name}</h2>
-                <p>document を選び、metadata を直し、preview を見ながら source を編集します。</p>
+                <p>
+                  document を選び、metadata を直し、preview を見ながら source
+                  を編集します。
+                </p>
               </div>
             </div>
             <label className="advanced-playground__field">
@@ -719,21 +809,21 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
               <button
                 type="button"
                 className="button button--secondary"
-                onClick={() => handleAddDocument('article')}
+                onClick={() => handleAddDocument("article")}
               >
                 新しい article
               </button>
               <button
                 type="button"
                 className="button button--secondary"
-                onClick={() => handleAddDocument('book')}
+                onClick={() => handleAddDocument("book")}
               >
                 新しい book
               </button>
               <button
                 type="button"
                 className="button button--secondary"
-                onClick={() => handleAddDocument('chapter')}
+                onClick={() => handleAddDocument("chapter")}
                 disabled={!hasBooks}
               >
                 新しい chapter
@@ -746,7 +836,7 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
                   key={summary.id}
                   type="button"
                   className={`advanced-playground__document-item${
-                    selectedDocumentId === summary.id ? ' is-active' : ''
+                    selectedDocumentId === summary.id ? " is-active" : ""
                   }`}
                   onClick={() => setSelectedDocumentId(summary.id)}
                 >
@@ -764,7 +854,10 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
               <div className="advanced-playground__section-copy">
                 <p className="eyebrow">site settings</p>
                 <h2>共通 docs chrome</h2>
-                <p>local preview で共通に使う title、tagline、landing copy を整えます。</p>
+                <p>
+                  local preview で共通に使う title、tagline、landing copy
+                  を整えます。
+                </p>
               </div>
             </div>
             <SiteSettingsForm workspace={workspace} onChange={setWorkspace} />
@@ -775,7 +868,9 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
               <div className="advanced-playground__section-copy">
                 <p className="eyebrow">publish target</p>
                 <h2>外部 API</h2>
-                <p>local bundle の形が固まってから remote endpoint をつなぎます。</p>
+                <p>
+                  local bundle の形が固まってから remote endpoint をつなぎます。
+                </p>
               </div>
             </div>
             <PublishTargetForm
@@ -800,10 +895,13 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
             <div className="advanced-playground__section-header">
               <div className="advanced-playground__section-copy">
                 <p className="eyebrow">editor</p>
-                <h2>{selectedDocument.title ?? deriveWorkspaceDocumentTitle(selectedDocument)}</h2>
+                <h2>
+                  {selectedDocument.title ??
+                    deriveWorkspaceDocumentTitle(selectedDocument)}
+                </h2>
                 <p>
-                  {selectedPublication.kind} / {selectedPublication.slug} / preview:{' '}
-                  {currentRouteLabel}
+                  {selectedPublication.kind} / {selectedPublication.slug} /
+                  preview: {currentRouteLabel}
                 </p>
               </div>
               <button
@@ -835,7 +933,10 @@ export function AdvancedPlaygroundApp({ store: injectedStore }: { store?: Worksp
                 }
                 documentId={selectedDocument.id}
                 eyebrow="papyr workspace"
-                title={selectedDocument.title ?? deriveWorkspaceDocumentTitle(selectedDocument)}
+                title={
+                  selectedDocument.title ??
+                  deriveWorkspaceDocumentTitle(selectedDocument)
+                }
                 subtitle={workspace.manifest.name}
               />
             </div>
@@ -901,7 +1002,7 @@ function SiteSettingsForm({
         <span>Logo emoji</span>
         <input
           type="text"
-          value={workspace.site.logoEmoji ?? ''}
+          value={workspace.site.logoEmoji ?? ""}
           onChange={(event) =>
             onChange((current) =>
               current
@@ -953,9 +1054,9 @@ function PublishTargetForm({
   onPublish: () => void;
 }) {
   const target = workspace.publishTarget ?? {
-    endpoint: '',
+    endpoint: "",
     workspaceId: workspace.manifest.id,
-    token: '',
+    token: "",
   };
 
   const updateTarget = (patch: Partial<PublishTargetConfig>) => {
@@ -966,9 +1067,9 @@ function PublishTargetForm({
             manifest: touchManifest(current.manifest),
             publishTarget: {
               ...(current.publishTarget ?? {
-                endpoint: '',
+                endpoint: "",
                 workspaceId: current.manifest.id,
-                token: '',
+                token: "",
               }),
               ...patch,
             },
@@ -993,18 +1094,25 @@ function PublishTargetForm({
         <input
           type="text"
           value={target.workspaceId}
-          onChange={(event) => updateTarget({ workspaceId: event.target.value })}
+          onChange={(event) =>
+            updateTarget({ workspaceId: event.target.value })
+          }
         />
       </label>
       <label className="advanced-playground__field">
         <span>Bearer token</span>
         <input
           type="password"
-          value={target.token ?? ''}
-          onChange={(event) => updateTarget({ token: event.target.value || undefined })}
+          value={target.token ?? ""}
+          onChange={(event) =>
+            updateTarget({ token: event.target.value || undefined })
+          }
         />
       </label>
-      <p>Bearer token is stored locally in OPFS as plain text for this browser profile.</p>
+      <p>
+        Bearer token is stored locally in OPFS as plain text for this browser
+        profile.
+      </p>
       <button type="button" className="button" onClick={onPublish}>
         Publish workspace
       </button>
@@ -1023,7 +1131,9 @@ function DocumentMetaForm({
   publication: WorkspacePublicationMeta;
   onChange: (nextDocument: PapyrDocument) => void;
 }) {
-  const books = documents.filter((item) => getWorkspacePublicationMeta(item)?.kind === 'book');
+  const books = documents.filter(
+    (item) => getWorkspacePublicationMeta(item)?.kind === "book",
+  );
   const updateMeta = (patch: Partial<WorkspacePublicationMeta>) => {
     const nextPublication = {
       ...publication,
@@ -1044,7 +1154,7 @@ function DocumentMetaForm({
         <span>Title</span>
         <input
           type="text"
-          value={document.title ?? ''}
+          value={document.title ?? ""}
           onChange={(event) =>
             onChange({
               ...document,
@@ -1058,23 +1168,29 @@ function DocumentMetaForm({
         <input
           type="text"
           value={publication.slug}
-          onChange={(event) => updateMeta({ slug: slugify(event.target.value) })}
+          onChange={(event) =>
+            updateMeta({ slug: slugify(event.target.value) })
+          }
         />
       </label>
       <label className="advanced-playground__field">
         <span>Emoji</span>
         <input
           type="text"
-          value={publication.emoji ?? ''}
-          onChange={(event) => updateMeta({ emoji: event.target.value || undefined })}
+          value={publication.emoji ?? ""}
+          onChange={(event) =>
+            updateMeta({ emoji: event.target.value || undefined })
+          }
         />
       </label>
       <label className="advanced-playground__field">
         <span>Topics</span>
         <input
           type="text"
-          value={publication.topics.join(', ')}
-          onChange={(event) => updateMeta({ topics: splitTopics(event.target.value) })}
+          value={publication.topics.join(", ")}
+          onChange={(event) =>
+            updateMeta({ topics: splitTopics(event.target.value) })
+          }
         />
       </label>
       <label className="advanced-playground__field">
@@ -1093,14 +1209,16 @@ function DocumentMetaForm({
           onChange={(event) => updateMeta({ summary: event.target.value })}
         />
       </label>
-      {publication.kind === 'chapter' ? (
+      {publication.kind === "chapter" ? (
         <>
           <label className="advanced-playground__field">
             <span>Book</span>
             <select
               value={publication.bookId}
               onChange={(event) =>
-                updateMeta({ bookId: event.target.value } as Partial<WorkspacePublicationMeta>)
+                updateMeta({
+                  bookId: event.target.value,
+                } as Partial<WorkspacePublicationMeta>)
               }
             >
               {books.map((book) => (
@@ -1119,7 +1237,10 @@ function DocumentMetaForm({
               value={publication.chapterOrder}
               onChange={(event) =>
                 updateMeta({
-                  chapterOrder: Math.max(1, Number.parseInt(event.target.value, 10) || 1),
+                  chapterOrder: Math.max(
+                    1,
+                    Number.parseInt(event.target.value, 10) || 1,
+                  ),
                 } as Partial<WorkspacePublicationMeta>)
               }
             />
@@ -1147,21 +1268,21 @@ function WorkspacePreview({
 }) {
   const publications = listWorkspacePublicationSummaries(workspace.documents);
   const articles = publications.filter(
-    (publication) => publication.kind === 'article' && publication.published,
+    (publication) => publication.kind === "article" && publication.published,
   );
   const books = publications.filter(
-    (publication) => publication.kind === 'book' && publication.published,
+    (publication) => publication.kind === "book" && publication.published,
   );
 
   let content: JSX.Element;
   switch (route.name) {
-    case 'home':
+    case "home":
       content = (
         <section className="advanced-playground__preview-stack">
           <header className="advanced-playground__preview-hero">
             <p className="eyebrow">home</p>
             <h2>
-              {workspace.site.logoEmoji ? `${workspace.site.logoEmoji} ` : ''}
+              {workspace.site.logoEmoji ? `${workspace.site.logoEmoji} ` : ""}
               {workspace.site.title}
             </h2>
             <p>{workspace.site.tagline}</p>
@@ -1176,7 +1297,9 @@ function WorkspacePreview({
                   key={article.id}
                   type="button"
                   className="advanced-playground__preview-link"
-                  onClick={() => onNavigate({ name: 'article', slug: article.slug })}
+                  onClick={() =>
+                    onNavigate({ name: "article", slug: article.slug })
+                  }
                 >
                   {article.title}
                 </button>
@@ -1190,7 +1313,7 @@ function WorkspacePreview({
                   key={book.id}
                   type="button"
                   className="advanced-playground__preview-link"
-                  onClick={() => onNavigate({ name: 'book', slug: book.slug })}
+                  onClick={() => onNavigate({ name: "book", slug: book.slug })}
                 >
                   {book.title}
                 </button>
@@ -1200,7 +1323,7 @@ function WorkspacePreview({
         </section>
       );
       break;
-    case 'articles':
+    case "articles":
       content = (
         <section className="advanced-playground__preview-stack">
           <h2>articles</h2>
@@ -1209,7 +1332,9 @@ function WorkspacePreview({
               <button
                 type="button"
                 className="advanced-playground__preview-link"
-                onClick={() => onNavigate({ name: 'article', slug: article.slug })}
+                onClick={() =>
+                  onNavigate({ name: "article", slug: article.slug })
+                }
               >
                 {article.title}
               </button>
@@ -1219,18 +1344,21 @@ function WorkspacePreview({
         </section>
       );
       break;
-    case 'books':
+    case "books":
       content = (
         <section className="advanced-playground__preview-stack">
           <h2>books</h2>
           {books.map((book) => {
-            const payload = buildWorkspaceBookPayload(book.id, workspace.documents);
+            const payload = buildWorkspaceBookPayload(
+              book.id,
+              workspace.documents,
+            );
             return (
               <article key={book.id} className="panel">
                 <button
                   type="button"
                   className="advanced-playground__preview-link"
-                  onClick={() => onNavigate({ name: 'book', slug: book.slug })}
+                  onClick={() => onNavigate({ name: "book", slug: book.slug })}
                 >
                   {book.title}
                 </button>
@@ -1242,8 +1370,12 @@ function WorkspacePreview({
         </section>
       );
       break;
-    case 'article': {
-      const article = findWorkspacePublicationBySlug(publications, 'article', route.slug);
+    case "article": {
+      const article = findWorkspacePublicationBySlug(
+        publications,
+        "article",
+        route.slug,
+      );
       const document = article
         ? (workspace.documents.find((item) => item.id === article.id) ?? null)
         : null;
@@ -1260,9 +1392,15 @@ function WorkspacePreview({
         );
       break;
     }
-    case 'book': {
-      const book = findWorkspacePublicationBySlug(publications, 'book', route.slug);
-      const payload = book ? buildWorkspaceBookPayload(book.id, workspace.documents) : null;
+    case "book": {
+      const book = findWorkspacePublicationBySlug(
+        publications,
+        "book",
+        route.slug,
+      );
+      const payload = book
+        ? buildWorkspaceBookPayload(book.id, workspace.documents)
+        : null;
       content =
         book && payload ? (
           <section className="advanced-playground__preview-stack">
@@ -1276,8 +1414,10 @@ function WorkspacePreview({
               <p className="eyebrow">chapters</p>
               <div className="advanced-playground__preview-stack">
                 {payload.chapters.map((chapter) => {
-                  const summary = publications.find((item) => item.id === chapter.id);
-                  if (!summary || summary.kind !== 'chapter') return null;
+                  const summary = publications.find(
+                    (item) => item.id === chapter.id,
+                  );
+                  if (!summary || summary.kind !== "chapter") return null;
                   return (
                     <button
                       key={chapter.id}
@@ -1285,7 +1425,7 @@ function WorkspacePreview({
                       className="advanced-playground__preview-link"
                       onClick={() =>
                         onNavigate({
-                          name: 'chapter',
+                          name: "chapter",
                           bookSlug: book.slug,
                           chapterSlug: summary.slug,
                         })
@@ -1303,10 +1443,15 @@ function WorkspacePreview({
         );
       break;
     }
-    case 'chapter': {
-      const match = findWorkspaceChapterBySlugs(publications, route.bookSlug, route.chapterSlug);
+    case "chapter": {
+      const match = findWorkspaceChapterBySlugs(
+        publications,
+        route.bookSlug,
+        route.chapterSlug,
+      );
       const document = match
-        ? (workspace.documents.find((item) => item.id === match.chapter.id) ?? null)
+        ? (workspace.documents.find((item) => item.id === match.chapter.id) ??
+          null)
         : null;
       content =
         match && document ? (
@@ -1321,7 +1466,7 @@ function WorkspacePreview({
         );
       break;
     }
-    case 'search':
+    case "search":
       content = (
         <section className="advanced-playground__preview-stack">
           <h2>search</h2>
@@ -1329,7 +1474,9 @@ function WorkspacePreview({
             <p>一致する document はまだありません。</p>
           ) : (
             searchResults.map((result) => {
-              const summary = publications.find((item) => item.id === result.id);
+              const summary = publications.find(
+                (item) => item.id === result.id,
+              );
               if (!summary) return null;
               return (
                 <article key={result.id} className="panel">
@@ -1337,15 +1484,17 @@ function WorkspacePreview({
                     type="button"
                     className="advanced-playground__preview-link"
                     onClick={() => {
-                      if (summary.kind === 'article') {
-                        onNavigate({ name: 'article', slug: summary.slug });
-                      } else if (summary.kind === 'book') {
-                        onNavigate({ name: 'book', slug: summary.slug });
+                      if (summary.kind === "article") {
+                        onNavigate({ name: "article", slug: summary.slug });
+                      } else if (summary.kind === "book") {
+                        onNavigate({ name: "book", slug: summary.slug });
                       } else {
-                        const book = publications.find((item) => item.id === summary.bookId);
-                        if (book?.kind === 'book') {
+                        const book = publications.find(
+                          (item) => item.id === summary.bookId,
+                        );
+                        if (book?.kind === "book") {
                           onNavigate({
-                            name: 'chapter',
+                            name: "chapter",
                             bookSlug: book.slug,
                             chapterSlug: summary.slug,
                           });
@@ -1373,7 +1522,9 @@ function WorkspacePreview({
       <div className="advanced-playground__section-header">
         <div>
           <p className="eyebrow">local preview</p>
-          <h2 data-testid="advanced-playground-preview-site-title">{workspace.site.title}</h2>
+          <h2 data-testid="advanced-playground-preview-site-title">
+            {workspace.site.title}
+          </h2>
         </div>
         <div className="advanced-playground__preview-summary">
           <span>article {articles.length} 件</span>
@@ -1385,28 +1536,28 @@ function WorkspacePreview({
         <button
           type="button"
           className="button button--secondary"
-          onClick={() => onNavigate({ name: 'home' })}
+          onClick={() => onNavigate({ name: "home" })}
         >
           Home
         </button>
         <button
           type="button"
           className="button button--secondary"
-          onClick={() => onNavigate({ name: 'articles' })}
+          onClick={() => onNavigate({ name: "articles" })}
         >
           Articles
         </button>
         <button
           type="button"
           className="button button--secondary"
-          onClick={() => onNavigate({ name: 'books' })}
+          onClick={() => onNavigate({ name: "books" })}
         >
           Books
         </button>
         <button
           type="button"
           className="button button--secondary"
-          onClick={() => onNavigate({ name: 'search' })}
+          onClick={() => onNavigate({ name: "search" })}
         >
           Search
         </button>
@@ -1416,7 +1567,7 @@ function WorkspacePreview({
           value={searchQuery}
           onChange={(event) => {
             onSearchQueryChange(event.target.value);
-            onNavigate({ name: 'search' });
+            onNavigate({ name: "search" });
           }}
         />
       </div>
@@ -1457,7 +1608,7 @@ function DocumentPreviewSurface({ document }: { document: PapyrDocument }) {
     if (!ref.current) return;
     void renderPapyrView(ref.current, {
       document,
-      mode: 'document',
+      mode: "document",
     });
   }, [document]);
 
@@ -1466,62 +1617,66 @@ function DocumentPreviewSurface({ document }: { document: PapyrDocument }) {
 
 function describePreviewRoute(route: PreviewRoute): string {
   switch (route.name) {
-    case 'home':
-      return 'home';
-    case 'articles':
-      return 'articles';
-    case 'books':
-      return 'books';
-    case 'article':
+    case "home":
+      return "home";
+    case "articles":
+      return "articles";
+    case "books":
+      return "books";
+    case "article":
       return `article: ${route.slug}`;
-    case 'book':
+    case "book":
       return `book: ${route.slug}`;
-    case 'chapter':
+    case "chapter":
       return `chapter: ${route.chapterSlug}`;
-    case 'search':
-      return 'search';
+    case "search":
+      return "search";
   }
 }
 
-function touchManifest(manifest: WorkspaceState['manifest']): WorkspaceState['manifest'] {
+function touchManifest(
+  manifest: WorkspaceState["manifest"],
+): WorkspaceState["manifest"] {
   return {
     ...manifest,
     updatedAt: new Date().toISOString(),
   };
 }
 
-function normalizeLegacyStarterWorkspace(workspace: WorkspaceState): WorkspaceState {
+function normalizeLegacyStarterWorkspace(
+  workspace: WorkspaceState,
+): WorkspaceState {
   let changed = false;
   let next = workspace;
 
-  if (next.manifest.name === 'Visitor docs site') {
+  if (next.manifest.name === "Visitor docs site") {
     next = {
       ...next,
       manifest: {
         ...next.manifest,
-        name: '来訪者向け docs site',
+        name: "来訪者向け docs site",
       },
     };
     changed = true;
   }
 
-  if (next.site.title === 'Visitor docs site') {
+  if (next.site.title === "Visitor docs site") {
     next = {
       ...next,
       site: {
         ...next.site,
-        title: '来訪者向け docs site',
+        title: "来訪者向け docs site",
       },
     };
     changed = true;
   }
 
-  if (next.site.tagline === 'Built locally in the browser with Papyr') {
+  if (next.site.tagline === "Built locally in the browser with Papyr") {
     next = {
       ...next,
       site: {
         ...next.site,
-        tagline: 'Papyr を使って browser の中だけで組み立てます',
+        tagline: "Papyr を使って browser の中だけで組み立てます",
       },
     };
     changed = true;
@@ -1529,14 +1684,14 @@ function normalizeLegacyStarterWorkspace(workspace: WorkspaceState): WorkspaceSt
 
   if (
     next.site.homeIntro ===
-    'Draft the pages your visitors should see first, then preview and publish the whole site from one workspace.'
+    "Draft the pages your visitors should see first, then preview and publish the whole site from one workspace."
   ) {
     next = {
       ...next,
       site: {
         ...next.site,
         homeIntro:
-          '最初に見せたい page から順に下書きし、そのまま preview と publish まで一つの workspace で進めます。',
+          "最初に見せたい page から順に下書きし、そのまま preview と publish まで一つの workspace で進めます。",
       },
     };
     changed = true;
@@ -1545,7 +1700,11 @@ function normalizeLegacyStarterWorkspace(workspace: WorkspaceState): WorkspaceSt
   const normalizedDocuments = next.documents.map((document) =>
     normalizeLegacyStarterDocument(document),
   );
-  if (normalizedDocuments.some((document, index) => document !== next.documents[index])) {
+  if (
+    normalizedDocuments.some(
+      (document, index) => document !== next.documents[index],
+    )
+  ) {
     next = {
       ...next,
       documents: normalizedDocuments,
@@ -1553,66 +1712,73 @@ function normalizeLegacyStarterWorkspace(workspace: WorkspaceState): WorkspaceSt
     changed = true;
   }
 
-  return changed ? { ...next, manifest: touchManifest(next.manifest) } : workspace;
+  return changed
+    ? { ...next, manifest: touchManifest(next.manifest) }
+    : workspace;
 }
 
-function normalizeLegacyStarterDocument(document: PapyrDocument): PapyrDocument {
+function normalizeLegacyStarterDocument(
+  document: PapyrDocument,
+): PapyrDocument {
   const source = serializeDocument(document);
   const articleSource =
-    '# What We Ship\n\nUse article pages for updates, changelogs, and short announcements.\n';
+    "# What We Ship\n\nUse article pages for updates, changelogs, and short announcements.\n";
   const chapterSource =
-    '# Getting Started\n\nUse this chapter to explain the first path a new visitor should follow.\n\n- Share the problem you solve\n- Show the first task\n- Link to deeper references\n';
+    "# Getting Started\n\nUse this chapter to explain the first path a new visitor should follow.\n\n- Share the problem you solve\n- Show the first task\n- Link to deeper references\n";
   const publication = getWorkspacePublicationMeta(document);
 
   if (
-    document.title === 'What We Ship' &&
-    publication?.kind === 'article' &&
-    publication.summary === 'Recent updates for the site or product.' &&
+    document.title === "What We Ship" &&
+    publication?.kind === "article" &&
+    publication.summary === "Recent updates for the site or product." &&
     source === articleSource
   ) {
     const parsed = parseMarkdown(
-      '# 今回の更新\n\narticle は更新、変更履歴、短いお知らせを書く場所として使います。\n',
+      "# 今回の更新\n\narticle は更新、変更履歴、短いお知らせを書く場所として使います。\n",
       { documentId: document.id },
     );
     return {
       ...parsed,
-      title: '今回の更新',
+      title: "今回の更新",
       meta: {
         ...document.meta,
         publication: {
           ...publication,
-          summary: 'site や product の最新更新をまとめます。',
+          summary: "site や product の最新更新をまとめます。",
         },
       },
     };
   }
 
   if (
-    document.title === 'Getting Started' &&
-    publication?.kind === 'chapter' &&
-    publication.summary === 'The first chapter for new readers.' &&
+    document.title === "Getting Started" &&
+    publication?.kind === "chapter" &&
+    publication.summary === "The first chapter for new readers." &&
     source === chapterSource
   ) {
     const parsed = parseMarkdown(
-      '# はじめに\n\n最初に読む人向けに、この章で最短の導線を案内します。\n\n- どんな課題を解くのかを書く\n- 最初の作業を一つ見せる\n- 詳しい説明への導線を置く\n',
+      "# はじめに\n\n最初に読む人向けに、この章で最短の導線を案内します。\n\n- どんな課題を解くのかを書く\n- 最初の作業を一つ見せる\n- 詳しい説明への導線を置く\n",
       { documentId: document.id },
     );
     return {
       ...parsed,
-      title: 'はじめに',
+      title: "はじめに",
       meta: {
         ...document.meta,
         publication: {
           ...publication,
-          summary: '初めて読む人向けの入口です。',
+          summary: "初めて読む人向けの入口です。",
         },
       },
     };
   }
 
-  if (source.includes('"caption": "New Excalidraw scene"')) {
+  if (source.includes('"caption": "New Moonlight diagram"')) {
     const parsed = parseMarkdown(
-      source.replace('"caption": "New Excalidraw scene"', '"caption": "新しい Excalidraw シーン"'),
+      source.replace(
+        '"caption": "New Moonlight diagram"',
+        '"caption": "新しい Moonlight 図"',
+      ),
       {
         documentId: document.id,
       },
@@ -1635,37 +1801,46 @@ function createWorkspaceDocument(
 ): PapyrDocument {
   const now = new Date().toISOString();
   const chapterBook =
-    kind === 'chapter'
-      ? (documents.find((document) => getWorkspacePublicationMeta(document)?.kind === 'book') ??
-        null)
+    kind === "chapter"
+      ? (documents.find(
+          (document) => getWorkspacePublicationMeta(document)?.kind === "book",
+        ) ?? null)
       : null;
-  if (kind === 'chapter' && !chapterBook) {
-    throw new Error('book is required before creating a chapter');
+  if (kind === "chapter" && !chapterBook) {
+    throw new Error("book is required before creating a chapter");
   }
   const counter =
-    documents.filter((document) => getWorkspacePublicationMeta(document)?.kind === kind).length + 1;
+    documents.filter(
+      (document) => getWorkspacePublicationMeta(document)?.kind === kind,
+    ).length + 1;
   const title =
-    kind === 'article'
+    kind === "article"
       ? `無題の記事 ${counter}`
-      : kind === 'book'
+      : kind === "book"
         ? `無題の book ${counter}`
         : `無題の chapter ${counter}`;
   const slug = slugify(title);
-  const id = kind === 'chapter' ? `${chapterBook!.id}--${slug}` : `${kind}-${slug}`;
-  const doc = parseMarkdown(`# ${title}\n\nここから書き始めます。\n`, { documentId: id });
+  const id =
+    kind === "chapter" ? `${chapterBook!.id}--${slug}` : `${kind}-${slug}`;
+  const doc = parseMarkdown(`# ${title}\n\nここから書き始めます。\n`, {
+    documentId: id,
+  });
   const meta: WorkspacePublicationMeta =
-    kind === 'chapter'
+    kind === "chapter"
       ? {
           kind,
           slug,
-          summary: 'chapter の概要を書きます。',
+          summary: "chapter の概要を書きます。",
           published: false,
           topics: [],
           bookId: chapterBook!.id,
           chapterOrder:
             documents.filter((document) => {
               const publication = getWorkspacePublicationMeta(document);
-              return publication?.kind === 'chapter' && publication.bookId === chapterBook!.id;
+              return (
+                publication?.kind === "chapter" &&
+                publication.bookId === chapterBook!.id
+              );
             }).length + 1,
         }
       : {
@@ -1692,15 +1867,18 @@ function toSourceMap(documents: PapyrDocument[]): Record<string, string> {
 }
 
 function resolvePublishUrl(target: PublishTargetConfig): string {
-  return target.endpoint.includes(':workspaceId')
-    ? target.endpoint.replace(':workspaceId', encodeURIComponent(target.workspaceId))
+  return target.endpoint.includes(":workspaceId")
+    ? target.endpoint.replace(
+        ":workspaceId",
+        encodeURIComponent(target.workspaceId),
+      )
     : target.endpoint;
 }
 
 function splitTopics(value: string): string[] {
   const seen = new Set<string>();
   return value
-    .split(',')
+    .split(",")
     .map((topic) => topic.trim())
     .filter((topic) => {
       if (!topic || seen.has(topic)) return false;
@@ -1713,14 +1891,16 @@ function slugify(value: string): string {
   return value
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function downloadJson(filename: string, value: unknown): void {
-  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(value, null, 2)], {
+    type: "application/json",
+  });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   link.click();

@@ -1,0 +1,21 @@
+{
+  "name": "mizchi/moonlight",
+  "version": "0.1.2",
+  "deps": {
+    "mizchi/luna": "0.12.3",
+    "mizchi/js": "0.10.14",
+    "mizchi/signals": "0.6.3",
+    "moonbitlang/async": "0.16.6",
+    "moonbitlang/x": "0.4.40"
+  },
+  "readme": "README.md",
+  "repository": "https://github.com/f4ah6o/papyr",
+  "license": "MIT",
+  "keywords": [
+    "js",
+    "luna"
+  ],
+  "description": "Papyr-vendored Moonlight SVG editor",
+  "source": "src",
+  "preferred-target": "js"
+}

@@ -1,7 +1,7 @@
 ---
 kind: book
 slug: editor-ui
-title: '@f12o/papyr-editor-ui'
+title: "@f12o/papyr-editor-ui"
 summary: Papyr の visual React editor workspace を提供する UI package。
 emoji: 🪟
 published: true
@@ -14,7 +14,7 @@ updatedAt: 2026-04-26T00:00:00.000Z
 `@f12o/papyr-editor-ui` は、docs site の `/playground` と VS Code extension webview で共有している
 React UI package です。`@f12o/papyr-editor` の headless schema / converter、`@f12o/papyr-markdown` の
 source 変換、`@f12o/papyr-preview` の描画をまとめて、visual editor と table / Mermaid /
-Excalidraw の embedded preview + block editor を 1 つの workspace に載せます。
+Moonlight の embedded preview + block editor を 1 つの workspace に載せます。
 
 UI を自前で組む前に「まず Papyr の編集体験を動かしたい」ときの近道で、`EditorWorkspace` と
 sample document helper を export しています。
@@ -22,11 +22,11 @@ sample document helper を export しています。
 ## 最小コード
 
 ```tsx
-import { useState } from 'react';
+import { useState } from "react";
 import {
   createSampleDocumentSource,
   EditorWorkspace,
-} from '@f12o/papyr-editor-ui';
+} from "@f12o/papyr-editor-ui";
 
 export function App() {
   const [source, setSource] = useState(() => createSampleDocumentSource());

@@ -1,7 +1,7 @@
 ---
 kind: book
 slug: editor
-title: '@f12o/papyr-editor'
+title: "@f12o/papyr-editor"
 summary: TipTap ベースのヘッドレスエディタ拡張。リスト項目に任意ブロックを入れられる papyr schema に対応。
 emoji: ✍️
 published: true
@@ -21,23 +21,23 @@ editor state を相互変換します。
 
 特に Papyr では list item の中に任意 block を入れられるので、通常の TipTap `listItem` をそのまま使わず、Papyr 専用 schema に差し替える必要があります。`@f12o/papyr-editor` はその差分をまとめて吸収する package です。
 
-React で Markdown-visible editor と table / Mermaid / Excalidraw の embedded preview + block editor
+React で Markdown-visible editor と table / Mermaid / Moonlight の embedded preview + block editor
 までまとめて使いたい場合は、`@f12o/papyr-editor` の上に組まれた `@f12o/papyr-editor-ui` を使うと UI を
 ゼロから組まずに済みます。
 
 ## 最小コード
 
 ```ts
-import { Editor } from '@tiptap/core';
-import { parseMarkdown } from '@f12o/papyr-markdown';
+import { Editor } from "@tiptap/core";
+import { parseMarkdown } from "@f12o/papyr-markdown";
 import {
   documentToProseMirror,
   papyrExtensions,
   proseMirrorToDocument,
-} from '@f12o/papyr-editor';
+} from "@f12o/papyr-editor";
 
-const doc = parseMarkdown('# Draft\n\n本文を書きます。', {
-  documentId: 'draft',
+const doc = parseMarkdown("# Draft\n\n本文を書きます。", {
+  documentId: "draft",
 });
 
 const editor = new Editor({

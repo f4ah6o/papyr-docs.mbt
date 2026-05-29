@@ -2,7 +2,7 @@
 kind: chapter
 slug: vscode-and-editor-flow
 title: VS Code と integrated editor の流れ
-summary: 'papyr copy 作成、custom editor、EditorWorkspace、formatter をどうつなぐか。'
+summary: "papyr copy 作成、custom editor、EditorWorkspace、formatter をどうつなぐか。"
 emoji: 🪄
 published: true
 topics: [use-case, vscode, editor]
@@ -22,7 +22,7 @@ VS Code webview と docs site の Playground は、どちらも `@f12o/papyr-edi
 
 - Markdown source を parse / serialize する
 - Markdown-visible editor を出す
-- table / Mermaid / Excalidraw の embedded preview と block editor を出す
+- table / Mermaid / Moonlight の embedded preview と block editor を出す
 
 UI を自前で組む前に integrated editor を入れたいなら、まず `EditorWorkspace` を埋め込むのが最短です。
 

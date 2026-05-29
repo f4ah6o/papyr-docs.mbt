@@ -1,0 +1,2735 @@
+// SVG Rendering - @model.Element → DomNode への変換
+// Luna の create_element_ns を使用
+
+///|
+/// SVG 要素に属性を設定（FFI）- 動的更新用
+extern "js" fn set_svg_attr_ffi(el : @js.Any, name : String, value : String) =
+  #| (el, name, value) => el.setAttribute(name, value)
+
+///|
+/// SVG 要素にイベントリスナーを追加（FFI）- 動的イベント用
+extern "js" fn add_event_listener_ffi(
+  el : @js.Any,
+  event : String,
+  handler : (@js.Any) -> Unit,
+) =
+  #| (el, event, handler) => el.addEventListener(event, handler)
+
+///|
+/// SVG 要素に子要素を追加（FFI）
+extern "js" fn append_child_ffi(parent : @js.Any, child : @js.Any) =
+  #| (parent, child) => parent.appendChild(child)
+
+///|
+/// SVG 要素を作成（Luna の create_element_ns を使用）
+/// class 属性は luna の setClassName がSVG要素で動作しないため、別途 setAttribute で設定
+fn create_svg_element(
+  tag : String,
+  attrs : Array[(String, String)],
+  handlers : Array[(String, (@js.Any) -> Unit)],
+) -> @js.Any {
+  // class 属性を分離（luna の setClassName はSVG要素で動作しないため）
+  let class_value : Ref[String?] = { val: None }
+  // 属性を AttrValue に変換
+  let luna_attrs : Array[(String, @element.AttrValue)] = []
+  for attr in attrs {
+    if attr.0 == "class" {
+      class_value.val = Some(attr.1)
+    } else {
+      luna_attrs.push((attr.0, @element.Static(attr.1)))
+    }
+  }
+  // ハンドラを追加
+  for handler in handlers {
+    luna_attrs.push((handler.0, @element.Handler(handler.1)))
+  }
+  // Luna の create_element_ns で作成し、@js.Any に変換
+  let node = @element.create_element_ns(@element.svg_ns, tag, luna_attrs, [])
+  let el = node.to_dom().as_any()
+  // class 属性は直接 setAttribute で設定
+  if class_value.val is Some(cv) {
+    set_svg_attr_ffi(el, "class", cv)
+  }
+  el
+}
+
+///|
+/// スタイル属性を配列に追加
+fn add_style_attrs(
+  attrs : Array[(String, String)],
+  style : @model.Style,
+) -> Unit {
+  if style.fill is Some(v) {
+    attrs.push(("fill", v))
+  } else {
+    attrs.push(("fill", "none"))
+  }
+  if style.stroke is Some(v) {
+    attrs.push(("stroke", v))
+  }
+  if style.stroke_width is Some(v) {
+    attrs.push(("stroke-width", @model.num_str(v)))
+  }
+  if style.opacity is Some(v) {
+    attrs.push(("opacity", @model.num_str(v)))
+  }
+  if style.stroke_dasharray is Some(v) {
+    attrs.push(("stroke-dasharray", v))
+  }
+}
+
+///|
+/// 矢印マーカー属性を追加（Line 用）
+/// context-stroke マーカーを使用して、参照元のstroke色を継承
+fn add_marker_attrs(
+  attrs : Array[(String, String)],
+  style : @model.Style,
+  _stroke_color : String,
+) -> Unit {
+  if style.marker_start is Some(@model.Arrow) {
+    attrs.push(("marker-start", "url(#arrow-start-context)"))
+  }
+  if style.marker_end is Some(@model.Arrow) {
+    attrs.push(("marker-end", "url(#arrow-end-context)"))
+  }
+}
+
+///|
+/// 要素を SVG ノードに変換
+/// parent: テキスト子要素の場合、親要素を渡すと中央に配置
+pub fn render_element(
+  el : @model.Element,
+  is_selected : Bool,
+  parent? : @model.Element? = None,
+) -> @js.Any {
+  let attrs : Array[(String, String)] = []
+  // data-id 属性（イベント処理用）
+  attrs.push(("data-id", el.id))
+  let style = el.style
+  let _ = is_selected // Line以外では未使用（Lineは別途ハイライト処理）
+  match el.shape {
+    @model.Rect(w, h, rx, ry) => {
+      attrs.push(("x", @model.num_str(el.x)))
+      attrs.push(("y", @model.num_str(el.y)))
+      attrs.push(("width", @model.num_str(w)))
+      attrs.push(("height", @model.num_str(h)))
+      if rx is Some(v) {
+        attrs.push(("rx", @model.num_str(v)))
+      }
+      if ry is Some(v) {
+        attrs.push(("ry", @model.num_str(v)))
+      }
+      add_style_attrs(attrs, style)
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all")) // 透明でもクリック可能
+      create_svg_element("rect", attrs, [])
+    }
+    @model.Circle(r) => {
+      attrs.push(("cx", @model.num_str(el.x)))
+      attrs.push(("cy", @model.num_str(el.y)))
+      attrs.push(("r", @model.num_str(r)))
+      add_style_attrs(attrs, style)
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all")) // 透明でもクリック可能
+      create_svg_element("circle", attrs, [])
+    }
+    @model.Ellipse(rx, ry) => {
+      attrs.push(("cx", @model.num_str(el.x)))
+      attrs.push(("cy", @model.num_str(el.y)))
+      attrs.push(("rx", @model.num_str(rx)))
+      attrs.push(("ry", @model.num_str(ry)))
+      add_style_attrs(attrs, style)
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all")) // 透明でもクリック可能
+      create_svg_element("ellipse", attrs, [])
+    }
+    @model.Line(x2, y2) => {
+      // グループ要素でラップ（ヒットエリア + 線）
+      let stroke_color = el.style.stroke.unwrap_or("#000000")
+      let group = create_svg_element(
+        "g",
+        [("data-id", el.id), ("data-element-type", "line"), ("cursor", "move")],
+        [],
+      )
+      // 透明なヒットエリア（クリックしやすくするため、24px幅）
+      let hit_attrs : Array[(String, String)] = [
+        ("data-id", el.id),
+        ("x1", @model.num_str(el.x)),
+        ("y1", @model.num_str(el.y)),
+        ("x2", @model.num_str(x2)),
+        ("y2", @model.num_str(y2)),
+        ("stroke", "transparent"),
+        ("stroke-width", "24"),
+      ]
+      let hit_area = create_svg_element("line", hit_attrs, [])
+      append_child_ffi(group, hit_area)
+      // 選択時はハイライト用の線を追加（矢印サイズに影響しないよう別の線として描画）
+      if is_selected {
+        let highlight_attrs : Array[(String, String)] = [
+          ("x1", @model.num_str(el.x)),
+          ("y1", @model.num_str(el.y)),
+          ("x2", @model.num_str(x2)),
+          ("y2", @model.num_str(y2)),
+          ("stroke", "rgba(0, 102, 255, 0.3)"),
+          (
+            "stroke-width",
+            @model.num_str(el.style.stroke_width.unwrap_or(1.0) + 6.0),
+          ),
+          ("stroke-linecap", "round"),
+          ("pointer-events", "none"),
+        ]
+        let highlight_el = create_svg_element("line", highlight_attrs, [])
+        append_child_ffi(group, highlight_el)
+      }
+      // 実際の線（元のスタイルをそのまま使用、矢印サイズが変わらないように）
+      let line_attrs : Array[(String, String)] = [
+        ("x1", @model.num_str(el.x)),
+        ("y1", @model.num_str(el.y)),
+        ("x2", @model.num_str(x2)),
+        ("y2", @model.num_str(y2)),
+        ("pointer-events", "none"),
+      ]
+      add_style_attrs(line_attrs, el.style)
+      // 矢印マーカーを追加（stroke_color は上で定義済み）
+      add_marker_attrs(line_attrs, el.style, stroke_color)
+      if el.transform is Some(t) {
+        line_attrs.push(("transform", t))
+      }
+      let line_el = create_svg_element("line", line_attrs, [])
+      append_child_ffi(group, line_el)
+      group
+    }
+    @model.Polyline(points) => {
+      let points_str = points.map(fn(p) { "\{p.x},\{p.y}" }).join(" ")
+      attrs.push(("points", points_str))
+      add_style_attrs(attrs, style)
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      create_svg_element("polyline", attrs, [])
+    }
+    @model.Path(d, _, _, _, _) => {
+      attrs.push(("d", d))
+      add_style_attrs(attrs, style)
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      create_svg_element("path", attrs, [])
+    }
+    @model.Image(src, w, h) => {
+      attrs.push(("href", src))
+      attrs.push(("x", @model.num_str(el.x)))
+      attrs.push(("y", @model.num_str(el.y)))
+      attrs.push(("width", @model.num_str(w)))
+      attrs.push(("height", @model.num_str(h)))
+      attrs.push(("preserveAspectRatio", "none"))
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all"))
+      create_svg_element("image", attrs, [])
+    }
+    @model.Text(content, font_size) => {
+      let size = font_size.unwrap_or(16.0)
+      // 親要素がある場合は親の中央に配置
+      let (text_x, text_y) = match parent {
+        Some(p) => {
+          let bbox = p.bounding_box()
+          (bbox.x + bbox.width / 2.0, bbox.y + bbox.height / 2.0)
+        }
+        None => (el.x, el.y)
+      }
+      // グループ要素でラップ（ヒットエリア + テキスト）
+      let group = create_svg_element(
+        "g",
+        [("data-id", el.id), ("data-element-type", "text"), ("cursor", "move")],
+        [],
+      )
+      // ヒットエリアのサイズを計算（純粋関数を使用）
+      let (hit_width, hit_height) = @model.calc_text_hit_area(content, size)
+      // 透明なヒットエリア（pointer-events: all で親要素より優先してクリックを受け取る）
+      let hit_attrs : Array[(String, String)] = [
+        ("data-id", el.id),
+        ("x", @model.num_str(text_x - hit_width / 2.0)),
+        ("y", @model.num_str(text_y - hit_height / 2.0)),
+        ("width", @model.num_str(hit_width)),
+        ("height", @model.num_str(hit_height)),
+        ("fill", "transparent"),
+        ("pointer-events", "all"),
+      ]
+      let hit_area = create_svg_element("rect", hit_attrs, [])
+      append_child_ffi(group, hit_area)
+      // テキスト要素
+      attrs.push(("x", @model.num_str(text_x)))
+      attrs.push(("y", @model.num_str(text_y)))
+      attrs.push(("font-size", @model.num_str(size)))
+      // font-family があれば追加
+      if el.style.font_family is Some(ff) {
+        attrs.push(("font-family", ff))
+      }
+      attrs.push(("text-anchor", "middle"))
+      attrs.push(("dominant-baseline", "middle"))
+      attrs.push(("pointer-events", "none"))
+      // 親要素がある場合、テキスト色は親の stroke に揃える（Excalidraw 仕様）
+      match parent {
+        Some(p) =>
+          if p.style.stroke is Some(stroke_color) {
+            attrs.push(("fill", stroke_color))
+          } else {
+            add_style_attrs(attrs, style)
+          }
+        None => add_style_attrs(attrs, style)
+      }
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      let text_el = create_svg_element("text", attrs, [])
+      set_multiline_text_ffi(text_el, content, text_x, size)
+      append_child_ffi(group, text_el)
+      group
+    }
+  }
+}
+
+///|
+/// SVG コンテナを作成（イベントハンドラ付き）
+pub fn render_svg_container(
+  width : Int,
+  height : Int,
+  on_pointerdown : (@js.Any) -> Unit,
+  on_pointermove : (@js.Any) -> Unit,
+  on_pointerup : (@js.Any) -> Unit,
+  on_contextmenu : (@js.Any) -> Unit,
+  children : Array[@js.Any],
+) -> @js.Any {
+  render_svg_container_with_viewport(
+    width,
+    height,
+    @model.Viewport::default(),
+    on_pointerdown,
+    on_pointermove,
+    on_pointerup,
+    on_contextmenu,
+    fn(_) {  },
+    children,
+  )
+}
+
+///|
+/// 矢印マーカーを作成（シンプルな三角形、context-stroke使用）
+fn create_arrow_marker(id : String, is_start : Bool) -> @js.Any {
+  // 矢印マーカー（stroke-width: 1 でも見やすいサイズ）
+  let marker_attrs : Array[(String, String)] = [
+    ("id", id),
+    ("markerWidth", "10"),
+    ("markerHeight", "10"),
+    ("refX", if is_start { "0" } else { "10" }),
+    ("refY", "5"),
+    ("orient", "auto"),
+    ("markerUnits", "strokeWidth"),
+  ]
+  let marker = create_svg_element("marker", marker_attrs, [])
+  // シンプルな三角形パス - context-stroke で参照元のstrokeを継承
+  let path_d = if is_start { "M10,0 L0,5 L10,10" } else { "M0,0 L10,5 L0,10" }
+  let path_attrs : Array[(String, String)] = [
+    ("d", path_d),
+    ("fill", "context-stroke"),
+  ]
+  let path = create_svg_element("path", path_attrs, [])
+  append_child_ffi(marker, path)
+  marker
+}
+
+///|
+/// SVG 定義（マーカー）を作成
+pub fn create_arrow_defs() -> @js.Any {
+  let defs = create_svg_element("defs", [], [])
+  // context-stroke マーカー（参照元のstrokeを継承）
+  let start_context = create_arrow_marker("arrow-start-context", true)
+  let end_context = create_arrow_marker("arrow-end-context", false)
+  append_child_ffi(defs, start_context)
+  append_child_ffi(defs, end_context)
+  defs
+}
+
+///|
+/// SVG コンテナを作成（ビューポート対応）
+pub fn render_svg_container_with_viewport(
+  width : Int,
+  height : Int,
+  viewport : @model.Viewport,
+  on_pointerdown : (@js.Any) -> Unit,
+  on_pointermove : (@js.Any) -> Unit,
+  on_pointerup : (@js.Any) -> Unit,
+  on_contextmenu : (@js.Any) -> Unit,
+  on_wheel : (@js.Any) -> Unit,
+  children : Array[@js.Any],
+) -> @js.Any {
+  // viewBox をビューポートに基づいて計算
+  let vb_width = width.to_double() / viewport.zoom
+  let vb_height = height.to_double() / viewport.zoom
+  let vb_x = viewport.scroll_x
+  let vb_y = viewport.scroll_y
+  let attrs : Array[(String, String)] = [
+    ("width", width.to_string()),
+    ("height", height.to_string()),
+    ("viewBox", "\{vb_x} \{vb_y} \{vb_width} \{vb_height}"),
+    (
+      "style", "border: 1px solid #ccc; background: #fafafa; user-select: none; touch-action: none; --ml-stroke: #000000; --ml-fill: transparent; --ml-text: #000000;",
+    ),
+  ]
+  let handlers : Array[(String, (@js.Any) -> Unit)] = [
+    ("pointerdown", on_pointerdown),
+    ("pointermove", on_pointermove),
+    ("pointerup", on_pointerup),
+    ("contextmenu", on_contextmenu),
+    ("wheel", on_wheel),
+  ]
+  let svg = create_svg_element("svg", attrs, handlers)
+  // 矢印マーカーの defs を追加
+  let defs = create_arrow_defs()
+  append_child_ffi(svg, defs)
+  for child in children {
+    append_child_ffi(svg, child)
+  }
+  svg
+}
+
+///|
+/// SVG を DomNode にラップ
+pub fn svg_to_dom_node(svg : @js.Any) -> @element.DomNode {
+  let node : @js_dom.Node = svg.cast()
+  @element.dom_node(node)
+}
+
+///|
+/// 要素を SVG 文字列に変換（エクスポート用）
+pub fn element_to_svg_string(el : @model.Element) -> String {
+  let style = el.style
+  let style_attrs = StringBuilder::new()
+  if style.fill is Some(v) {
+    style_attrs.write_string(" fill=\"\{v}\"")
+  } else {
+    style_attrs.write_string(" fill=\"none\"")
+  }
+  if style.stroke is Some(v) {
+    style_attrs.write_string(" stroke=\"\{v}\"")
+  }
+  if style.stroke_width is Some(v) {
+    style_attrs.write_string(" stroke-width=\"\{v}\"")
+  }
+  if style.opacity is Some(v) {
+    style_attrs.write_string(" opacity=\"\{v}\"")
+  }
+  let style_str = style_attrs.to_string()
+  match el.shape {
+    @model.Rect(w, h, rx, ry) => {
+      let rx_attr = if rx is Some(v) { " rx=\"\{v}\"" } else { "" }
+      let ry_attr = if ry is Some(v) { " ry=\"\{v}\"" } else { "" }
+      "<rect x=\"\{el.x}\" y=\"\{el.y}\" width=\"\{w}\" height=\"\{h}\"\{rx_attr}\{ry_attr}\{style_str}/>"
+    }
+    @model.Circle(r) =>
+      "<circle cx=\"\{el.x}\" cy=\"\{el.y}\" r=\"\{r}\"\{style_str}/>"
+    @model.Ellipse(rx, ry) =>
+      "<ellipse cx=\"\{el.x}\" cy=\"\{el.y}\" rx=\"\{rx}\" ry=\"\{ry}\"\{style_str}/>"
+    @model.Line(x2, y2) =>
+      "<line x1=\"\{el.x}\" y1=\"\{el.y}\" x2=\"\{x2}\" y2=\"\{y2}\"\{style_str}/>"
+    @model.Polyline(points) => {
+      let points_str = points.map(fn(p) { "\{p.x},\{p.y}" }).join(" ")
+      "<polyline points=\"\{points_str}\"\{style_str}/>"
+    }
+    @model.Path(d, _, _, _, _) => "<path d=\"\{d}\"\{style_str}/>"
+    @model.Image(src, w, h) =>
+      "<image href=\"\{@model.escape_xml(src)}\" x=\"\{el.x}\" y=\"\{el.y}\" width=\"\{w}\" height=\"\{h}\" preserveAspectRatio=\"none\"/>"
+    @model.Text(content, font_size) => {
+      let size = font_size.unwrap_or(16.0)
+      let fs_attr = " font-size=\"\{size}\""
+      if content.contains("\n") {
+        // 複数行テキストは tspan で出力
+        let lines : Array[String] = content
+          .split("\n")
+          .map(fn(sv) { sv.to_string() })
+          .collect()
+        let line_height = size * 1.2
+        let total_height = (lines.length() - 1).to_double() * line_height
+        let start_offset = -total_height / 2.0
+        let tspans : Array[String] = []
+        for i, line in lines {
+          let dy = if i == 0 { start_offset } else { line_height }
+          let escaped = @model.escape_xml(line)
+          let x_val = el.x
+          tspans.push("<tspan x=\"\{x_val}\" dy=\"\{dy}\">\{escaped}</tspan>")
+        }
+        let tspan_str = tspans.join("")
+        "<text x=\"\{el.x}\" y=\"\{el.y}\"\{fs_attr}\{style_str}>\{tspan_str}</text>"
+      } else {
+        let escaped = @model.escape_xml(content)
+        "<text x=\"\{el.x}\" y=\"\{el.y}\"\{fs_attr}\{style_str}>\{escaped}</text>"
+      }
+    }
+  }
+}
+
+///|
+/// 全要素を SVG 文字列に変換
+pub fn elements_to_svg(
+  elements : Array[@model.Element],
+  width : Int,
+  height : Int,
+) -> String {
+  let sb = StringBuilder::new()
+  sb.write_string(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"\{width}\" height=\"\{height}\" viewBox=\"0 0 \{width} \{height}\">\n",
+  )
+  // 子要素が親要素の上に描画されるようソート
+  let sorted = @model.sort_elements_for_render(elements)
+  for el in sorted {
+    sb.write_string("  ")
+    sb.write_string(element_to_svg_string(el))
+    sb.write_string("\n")
+  }
+  sb.write_string("</svg>")
+  sb.to_string()
+}
+
+///|
+/// 接続情報を文字列に変換 (format: "element-id:anchor")
+fn connection_to_string(conn : @model.Connection) -> String {
+  let anchor_str = @model.anchor_to_string(conn.anchor)
+  "\{conn.element_id}:\{anchor_str}"
+}
+
+///|
+/// 要素を Moonlight SVG 文字列に変換（メタデータ付き）
+pub fn element_to_moonlight_svg(el : @model.Element) -> String {
+  let style = el.style
+  let attrs = StringBuilder::new()
+  // メタデータ属性
+  attrs.write_string(" data-id=\"\{el.id}\"")
+  if el.parent_id is Some(pid) {
+    attrs.write_string(" data-parent-id=\"\{pid}\"")
+  }
+  // 接続情報
+  if el.connections is Some(conns) {
+    if conns.start is Some(start_conn) {
+      attrs.write_string(
+        " data-connection-start=\"\{connection_to_string(start_conn)}\"",
+      )
+    }
+    if conns.end is Some(end_conn) {
+      attrs.write_string(
+        " data-connection-end=\"\{connection_to_string(end_conn)}\"",
+      )
+    }
+  }
+  // transform
+  if el.transform is Some(t) {
+    attrs.write_string(" transform=\"\{t}\"")
+  }
+  // スタイル属性
+  if style.fill is Some(v) {
+    attrs.write_string(" fill=\"\{v}\"")
+  } else {
+    attrs.write_string(" fill=\"none\"")
+  }
+  if style.stroke is Some(v) {
+    attrs.write_string(" stroke=\"\{v}\"")
+  }
+  if style.stroke_width is Some(v) {
+    attrs.write_string(" stroke-width=\"\{v}\"")
+  }
+  if style.opacity is Some(v) {
+    attrs.write_string(" opacity=\"\{v}\"")
+  }
+  if style.stroke_dasharray is Some(v) {
+    attrs.write_string(" stroke-dasharray=\"\{v}\"")
+  }
+  // マーカー属性
+  if style.marker_start is Some(@model.Arrow) {
+    attrs.write_string(" marker-start=\"url(#arrow-start)\"")
+  }
+  if style.marker_end is Some(@model.Arrow) {
+    attrs.write_string(" marker-end=\"url(#arrow-end)\"")
+  }
+  let attrs_str = attrs.to_string()
+  match el.shape {
+    @model.Rect(w, h, rx, ry) => {
+      let rx_attr = if rx is Some(v) { " rx=\"\{v}\"" } else { "" }
+      let ry_attr = if ry is Some(v) { " ry=\"\{v}\"" } else { "" }
+      "<rect x=\"\{el.x}\" y=\"\{el.y}\" width=\"\{w}\" height=\"\{h}\"\{rx_attr}\{ry_attr}\{attrs_str}/>"
+    }
+    @model.Circle(r) =>
+      "<circle cx=\"\{el.x}\" cy=\"\{el.y}\" r=\"\{r}\"\{attrs_str}/>"
+    @model.Ellipse(rx, ry) =>
+      "<ellipse cx=\"\{el.x}\" cy=\"\{el.y}\" rx=\"\{rx}\" ry=\"\{ry}\"\{attrs_str}/>"
+    @model.Line(x2, y2) =>
+      "<line x1=\"\{el.x}\" y1=\"\{el.y}\" x2=\"\{x2}\" y2=\"\{y2}\"\{attrs_str}/>"
+    @model.Polyline(points) => {
+      let points_str = points.map(fn(p) { "\{p.x},\{p.y}" }).join(" ")
+      "<polyline points=\"\{points_str}\"\{attrs_str}/>"
+    }
+    @model.Path(d, _, _, _, _) => "<path d=\"\{d}\"\{attrs_str}/>"
+    @model.Image(src, w, h) =>
+      "<image href=\"\{@model.escape_xml(src)}\" x=\"\{el.x}\" y=\"\{el.y}\" width=\"\{w}\" height=\"\{h}\" preserveAspectRatio=\"none\"\{attrs_str}/>"
+    @model.Text(content, font_size) => {
+      let size = font_size.unwrap_or(16.0)
+      let fs_attr = " font-size=\"\{size}\""
+      if content.contains("\n") {
+        let lines : Array[String] = content
+          .split("\n")
+          .map(fn(sv) { sv.to_string() })
+          .collect()
+        let line_height = size * 1.2
+        let total_height = (lines.length() - 1).to_double() * line_height
+        let start_offset = -total_height / 2.0
+        let tspans : Array[String] = []
+        for i, line in lines {
+          let dy = if i == 0 { start_offset } else { line_height }
+          let escaped = @model.escape_xml(line)
+          let x_val = el.x
+          tspans.push("<tspan x=\"\{x_val}\" dy=\"\{dy}\">\{escaped}</tspan>")
+        }
+        let tspan_str = tspans.join("")
+        "<text x=\"\{el.x}\" y=\"\{el.y}\"\{fs_attr}\{attrs_str}>\{tspan_str}</text>"
+      } else {
+        let escaped = @model.escape_xml(content)
+        "<text x=\"\{el.x}\" y=\"\{el.y}\"\{fs_attr}\{attrs_str}>\{escaped}</text>"
+      }
+    }
+  }
+}
+
+///|
+/// 矢印マーカー定義を生成
+fn generate_arrow_defs() -> String {
+  let sb = StringBuilder::new()
+  sb.write_string("  <defs>\n")
+  // 始点矢印
+  sb.write_string(
+    "    <marker id=\"arrow-start\" markerWidth=\"10\" markerHeight=\"10\" refX=\"0\" refY=\"3\" orient=\"auto-start-reverse\">\n",
+  )
+  sb.write_string(
+    "      <path d=\"M0,0 L0,6 L9,3 z\" fill=\"currentColor\"/>\n",
+  )
+  sb.write_string("    </marker>\n")
+  // 終点矢印
+  sb.write_string(
+    "    <marker id=\"arrow-end\" markerWidth=\"10\" markerHeight=\"10\" refX=\"9\" refY=\"3\" orient=\"auto\">\n",
+  )
+  sb.write_string(
+    "      <path d=\"M0,0 L0,6 L9,3 z\" fill=\"currentColor\"/>\n",
+  )
+  sb.write_string("    </marker>\n")
+  sb.write_string("  </defs>\n")
+  sb.to_string()
+}
+
+///|
+/// 全要素を Moonlight SVG 形式で出力
+pub fn elements_to_moonlight_svg(
+  elements : Array[@model.Element],
+  width : Int,
+  height : Int,
+  bg_color : String,
+) -> String {
+  let sb = StringBuilder::new()
+  sb.write_string(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"\{width}\" height=\"\{height}\" viewBox=\"0 0 \{width} \{height}\" data-moonlight=\"1.0\">\n",
+  )
+  // 矢印定義
+  sb.write_string(generate_arrow_defs())
+  // 背景
+  if bg_color != "transparent" {
+    sb.write_string(
+      "  <rect width=\"100%\" height=\"100%\" fill=\"\{bg_color}\"/>\n",
+    )
+  }
+  // 要素（子要素が親要素の上に描画されるようソート）
+  let sorted = @model.sort_elements_for_render(elements)
+  for el in sorted {
+    // 子テキスト要素の場合、親の stroke 色を取得
+    let parent_stroke = @model.get_parent_stroke(elements, el.parent_id)
+    sb.write_string("  ")
+    sb.write_string(element_to_moonlight_svg_with_parent(el, parent_stroke))
+    sb.write_string("\n")
+  }
+  sb.write_string("</svg>")
+  sb.to_string()
+}
+
+///|
+/// 要素を Moonlight SVG 文字列に変換（親の stroke 色を考慮）
+fn element_to_moonlight_svg_with_parent(
+  el : @model.Element,
+  parent_stroke : String?,
+) -> String {
+  let style = el.style
+  let attrs = StringBuilder::new()
+  // メタデータ属性
+  attrs.write_string(" data-id=\"\{el.id}\"")
+  if el.parent_id is Some(pid) {
+    attrs.write_string(" data-parent-id=\"\{pid}\"")
+  }
+  // 接続情報
+  if el.connections is Some(conns) {
+    if conns.start is Some(start_conn) {
+      attrs.write_string(
+        " data-connection-start=\"\{connection_to_string(start_conn)}\"",
+      )
+    }
+    if conns.end is Some(end_conn) {
+      attrs.write_string(
+        " data-connection-end=\"\{connection_to_string(end_conn)}\"",
+      )
+    }
+  }
+  // transform
+  if el.transform is Some(t) {
+    attrs.write_string(" transform=\"\{t}\"")
+  }
+  // スタイル属性（テキスト以外）
+  let is_text = el.shape is @model.Text(_, _)
+  if is_text {
+    // テキストの場合、親があれば親の stroke を使用
+    let text_fill = @model.get_text_fill_color(style, parent_stroke)
+    attrs.write_string(" fill=\"\{text_fill}\"")
+  } else if style.fill is Some(v) {
+    attrs.write_string(" fill=\"\{v}\"")
+  } else {
+    attrs.write_string(" fill=\"none\"")
+  }
+  if style.stroke is Some(v) {
+    attrs.write_string(" stroke=\"\{v}\"")
+  }
+  if style.stroke_width is Some(v) {
+    attrs.write_string(" stroke-width=\"\{v}\"")
+  }
+  if style.opacity is Some(v) {
+    attrs.write_string(" opacity=\"\{v}\"")
+  }
+  if style.stroke_dasharray is Some(v) {
+    attrs.write_string(" stroke-dasharray=\"\{v}\"")
+  }
+  // マーカー属性
+  if style.marker_start is Some(@model.Arrow) {
+    attrs.write_string(" marker-start=\"url(#arrow-start)\"")
+  }
+  if style.marker_end is Some(@model.Arrow) {
+    attrs.write_string(" marker-end=\"url(#arrow-end)\"")
+  }
+  let attrs_str = attrs.to_string()
+  match el.shape {
+    @model.Rect(w, h, rx, ry) => {
+      let rx_attr = if rx is Some(v) { " rx=\"\{v}\"" } else { "" }
+      let ry_attr = if ry is Some(v) { " ry=\"\{v}\"" } else { "" }
+      "<rect x=\"\{el.x}\" y=\"\{el.y}\" width=\"\{w}\" height=\"\{h}\"\{rx_attr}\{ry_attr}\{attrs_str}/>"
+    }
+    @model.Circle(r) =>
+      "<circle cx=\"\{el.x}\" cy=\"\{el.y}\" r=\"\{r}\"\{attrs_str}/>"
+    @model.Ellipse(rx, ry) =>
+      "<ellipse cx=\"\{el.x}\" cy=\"\{el.y}\" rx=\"\{rx}\" ry=\"\{ry}\"\{attrs_str}/>"
+    @model.Line(x2, y2) =>
+      "<line x1=\"\{el.x}\" y1=\"\{el.y}\" x2=\"\{x2}\" y2=\"\{y2}\"\{attrs_str}/>"
+    @model.Polyline(points) => {
+      let points_str = points.map(fn(p) { "\{p.x},\{p.y}" }).join(" ")
+      "<polyline points=\"\{points_str}\"\{attrs_str}/>"
+    }
+    @model.Path(d, _, _, _, _) => "<path d=\"\{d}\"\{attrs_str}/>"
+    @model.Image(src, w, h) =>
+      "<image href=\"\{@model.escape_xml(src)}\" x=\"\{el.x}\" y=\"\{el.y}\" width=\"\{w}\" height=\"\{h}\" preserveAspectRatio=\"none\"\{attrs_str}/>"
+    @model.Text(content, font_size) => {
+      let size = font_size.unwrap_or(16.0)
+      let fs_attr = " font-size=\"\{size}\""
+      if content.contains("\n") {
+        let lines : Array[String] = content
+          .split("\n")
+          .map(fn(sv) { sv.to_string() })
+          .collect()
+        let line_height = size * 1.2
+        let total_height = (lines.length() - 1).to_double() * line_height
+        let start_offset = -total_height / 2.0
+        let tspans : Array[String] = []
+        for i, line in lines {
+          let dy = if i == 0 { start_offset } else { line_height }
+          let escaped = @model.escape_xml(line)
+          let x_val = el.x
+          tspans.push("<tspan x=\"\{x_val}\" dy=\"\{dy}\">\{escaped}</tspan>")
+        }
+        let tspan_str = tspans.join("")
+        "<text x=\"\{el.x}\" y=\"\{el.y}\"\{fs_attr} text-anchor=\"middle\" dominant-baseline=\"middle\"\{attrs_str}>\{tspan_str}</text>"
+      } else {
+        let escaped = @model.escape_xml(content)
+        "<text x=\"\{el.x}\" y=\"\{el.y}\"\{fs_attr} text-anchor=\"middle\" dominant-baseline=\"middle\"\{attrs_str}>\{escaped}</text>"
+      }
+    }
+  }
+}
+
+///|
+/// グリッド線を描画
+pub fn render_grid(
+  width : Int,
+  height : Int,
+  grid_size : Int,
+  viewport : @model.Viewport,
+) -> Array[@js.Any] {
+  let lines : Array[@js.Any] = []
+  let size = grid_size.to_double()
+  // viewBox の範囲を計算
+  let vb_width = width.to_double() / viewport.zoom
+  let vb_height = height.to_double() / viewport.zoom
+  let start_x = viewport.scroll_x
+  let start_y = viewport.scroll_y
+  let end_x = start_x + vb_width
+  let end_y = start_y + vb_height
+  // グリッドの開始位置を計算（グリッドにスナップ）
+  let grid_start_x = (start_x / size).floor() * size
+  let grid_start_y = (start_y / size).floor() * size
+  // 縦線
+  let mut x = grid_start_x
+  while x <= end_x {
+    let attrs : Array[(String, String)] = [
+      ("x1", x.to_string()),
+      ("y1", start_y.to_string()),
+      ("x2", x.to_string()),
+      ("y2", end_y.to_string()),
+      ("stroke", "#e0e0e0"),
+      ("stroke-width", "0.5"),
+    ]
+    lines.push(create_svg_element("line", attrs, []))
+    x = x + size
+  }
+  // 横線
+  let mut y = grid_start_y
+  while y <= end_y {
+    let attrs : Array[(String, String)] = [
+      ("x1", start_x.to_string()),
+      ("y1", y.to_string()),
+      ("x2", end_x.to_string()),
+      ("y2", y.to_string()),
+      ("stroke", "#e0e0e0"),
+      ("stroke-width", "0.5"),
+    ]
+    lines.push(create_svg_element("line", attrs, []))
+    y = y + size
+  }
+  lines
+}
+
+///|
+/// リサイズハンドルのサイズ
+let handle_size : Double = 8.0
+
+///|
+/// リサイズハンドルを描画
+pub fn render_resize_handles(el : @model.Element) -> Array[@js.Any] {
+  let half = handle_size / 2.0
+  let handles : Array[@js.Any] = []
+  // Path はリサイズハンドルを表示しない
+  if el.shape is @model.Path(_, _, _, _, _) {
+    return handles
+  }
+  // Line の場合は始点と終点にハンドルを表示
+  match el.shape {
+    @model.Line(x2, y2) => {
+      let positions = [
+        ("line-start", el.x, el.y, "move"),
+        ("line-end", x2, y2, "move"),
+      ]
+      let hit_radius = 12.0 // ヒットエリア（大きめ）
+      let visible_radius = 5.0 // 通常表示サイズ
+      let hover_radius = 10.0 // ホバー時サイズ
+      for pos in positions {
+        let (handle_id, cx, cy, cursor) = pos
+        // グループ要素を作成
+        let group = create_svg_element("g", [("class", "line-handle-group")], [])
+        // 透明なヒットエリア（大きめ）
+        let hit_area_attrs : Array[(String, String)] = [
+          ("cx", @model.num_str(cx)),
+          ("cy", @model.num_str(cy)),
+          ("r", @model.num_str(hit_radius)),
+          ("fill", "transparent"),
+          ("cursor", cursor),
+          ("data-handle", handle_id),
+          ("data-element-id", el.id),
+        ]
+        let hit_area = create_svg_element("circle", hit_area_attrs, [])
+        // 可視のハンドル（CSSでホバー効果）
+        let visible_attrs : Array[(String, String)] = [
+          ("cx", @model.num_str(cx)),
+          ("cy", @model.num_str(cy)),
+          ("r", @model.num_str(visible_radius)),
+          ("fill", "#0066ff"),
+          ("stroke", "#ffffff"),
+          ("stroke-width", "2"),
+          ("pointer-events", "none"),
+          ("class", "line-handle-visible"),
+          ("style", "transition: r 0.15s ease, fill 0.15s ease;"),
+        ]
+        let visible_circle = create_svg_element("circle", visible_attrs, [])
+        // ホバー時に可視ハンドルを拡大するイベント
+        add_event_listener_ffi(hit_area, "mouseenter", fn(_e) {
+          set_svg_attr_ffi(visible_circle, "r", @model.num_str(hover_radius))
+          set_svg_attr_ffi(visible_circle, "fill", "#0088ff")
+        })
+        add_event_listener_ffi(hit_area, "mouseleave", fn(_e) {
+          set_svg_attr_ffi(visible_circle, "r", @model.num_str(visible_radius))
+          set_svg_attr_ffi(visible_circle, "fill", "#0066ff")
+        })
+        append_child_ffi(group, hit_area)
+        append_child_ffi(group, visible_circle)
+        handles.push(group)
+      }
+    }
+    _ => {
+      // その他の形状は四隅のハンドル
+      let bbox = el.bounding_box()
+      let positions = [
+        ("nw", bbox.x - half, bbox.y - half, "nwse-resize"),
+        ("ne", bbox.x + bbox.width - half, bbox.y - half, "nesw-resize"),
+        ("sw", bbox.x - half, bbox.y + bbox.height - half, "nesw-resize"),
+        (
+          "se",
+          bbox.x + bbox.width - half,
+          bbox.y + bbox.height - half,
+          "nwse-resize",
+        ),
+      ]
+      for pos in positions {
+        let (handle_id, hx, hy, cursor) = pos
+        let attrs : Array[(String, String)] = [
+          ("data-handle", handle_id),
+          ("data-element-id", el.id),
+          ("x", @model.num_str(hx)),
+          ("y", @model.num_str(hy)),
+          ("width", @model.num_str(handle_size)),
+          ("height", @model.num_str(handle_size)),
+          ("fill", "#0066ff"),
+          ("stroke", "#ffffff"),
+          ("stroke-width", "1"),
+          ("cursor", cursor),
+        ]
+        handles.push(create_svg_element("rect", attrs, []))
+      }
+    }
+  }
+  handles
+}
+
+///|
+/// 矩形選択ボックスを描画
+pub fn render_selection_box(box_state : @model.BoxSelectState) -> @js.Any {
+  let bbox = box_state.to_bbox()
+  let attrs : Array[(String, String)] = [
+    ("x", @model.num_str(bbox.x)),
+    ("y", @model.num_str(bbox.y)),
+    ("width", @model.num_str(bbox.width)),
+    ("height", @model.num_str(bbox.height)),
+    ("fill", "rgba(0, 102, 255, 0.1)"),
+    ("stroke", "#0066ff"),
+    ("stroke-width", "1"),
+    ("stroke-dasharray", "4,2"),
+    ("pointer-events", "none"),
+  ]
+  create_svg_element("rect", attrs, [])
+}
+
+///|
+/// 接続ポイントのハイライトを描画（スナップ先）
+pub fn render_connection_highlight(point : @model.Point) -> @js.Any {
+  // 接続ポイントを強調表示する円
+  let attrs : Array[(String, String)] = [
+    ("cx", @model.num_str(point.x)),
+    ("cy", @model.num_str(point.y)),
+    ("r", "10"),
+    ("fill", "rgba(0, 200, 100, 0.4)"),
+    ("stroke", "#00c864"),
+    ("stroke-width", "2"),
+    ("pointer-events", "none"),
+  ]
+  create_svg_element("circle", attrs, [])
+}
+
+///|
+/// 接続済みポイントを描画（選択要素に接続しているラインの端点）
+pub fn render_connected_point(point : @model.Point) -> @js.Any {
+  let attrs : Array[(String, String)] = [
+    ("cx", @model.num_str(point.x)),
+    ("cy", @model.num_str(point.y)),
+    ("r", "5"),
+    ("fill", "rgba(255, 200, 0, 0.5)"),
+    ("stroke", "#ffcc00"),
+    ("stroke-width", "1.5"),
+    ("pointer-events", "none"),
+  ]
+  create_svg_element("circle", attrs, [])
+}
+
+///|
+/// 選択要素に接続しているラインの接続ポイントを収集
+pub fn get_connected_points(
+  elements : Array[@model.Element],
+  selected_el : @model.Element,
+) -> Array[@model.Point] {
+  let points : Array[@model.Point] = []
+  for el in elements {
+    // Line 要素のみ処理
+    guard el.shape is @model.Line(_, _) else { continue }
+    guard el.connections is Some(conns) else { continue }
+    // 始点の接続を確認
+    if conns.start is Some(conn) && conn.element_id == selected_el.id {
+      let anchor_point = selected_el.get_anchor_point(conn.anchor)
+      points.push(anchor_point)
+    }
+    // 終点の接続を確認
+    if conns.end is Some(conn) && conn.element_id == selected_el.id {
+      let anchor_point = selected_el.get_anchor_point(conn.anchor)
+      points.push(anchor_point)
+    }
+  }
+  points
+}
+
+///|
+/// 選択中の図形のアンカーポイントを描画（ドラッグでライン生成用）
+pub fn render_element_anchors(el : @model.Element) -> Array[@js.Any] {
+  let result : Array[@js.Any] = []
+  // Line にはアンカーを表示しない
+  if el.shape is @model.Line(_, _) {
+    return result
+  }
+  // 全アンカーポイントを描画（中心と四隅以外）
+  for anchor_data in el.get_all_anchors() {
+    let (anchor, point) = anchor_data
+    // 中心点はスキップ（ドラッグやダブルクリックと干渉するため）
+    // 四隅はリサイズハンドルと重なるためスキップ
+    if anchor == @model.Center ||
+      anchor == @model.TopLeft ||
+      anchor == @model.TopRight ||
+      anchor == @model.BottomLeft ||
+      anchor == @model.BottomRight {
+      continue
+    }
+    let anchor_name = @model.anchor_to_string(anchor)
+    let attrs : Array[(String, String)] = [
+      ("cx", @model.num_str(point.x)),
+      ("cy", @model.num_str(point.y)),
+      ("r", "5"),
+      ("fill", "rgba(100, 100, 255, 0.15)"),
+      ("stroke", "rgba(100, 100, 255, 0.4)"),
+      ("stroke-width", "1"),
+      ("cursor", "crosshair"),
+      ("class", "anchor-point"),
+      ("data-anchor", anchor_name),
+      ("data-anchor-element", el.id),
+    ]
+    result.push(create_svg_element("circle", attrs, []))
+  }
+  result
+}
+
+///|
+/// 選択要素に接続しているラインのアンカーポイントを黄色でハイライト描画
+pub fn render_connected_anchor_highlights(
+  elements : Array[@model.Element],
+  selected_el : @model.Element,
+) -> Array[@js.Any] {
+  let result : Array[@js.Any] = []
+  // 接続ポイントを収集
+  let points = get_connected_points(elements, selected_el)
+  // 各接続ポイントを黄色でハイライト
+  for point in points {
+    let attrs : Array[(String, String)] = [
+      ("cx", @model.num_str(point.x)),
+      ("cy", @model.num_str(point.y)),
+      ("r", "8"),
+      ("fill", "rgba(255, 200, 0, 0.5)"),
+      ("stroke", "#ffc800"),
+      ("stroke-width", "2"),
+      ("pointer-events", "none"),
+    ]
+    result.push(create_svg_element("circle", attrs, []))
+  }
+  result
+}
+
+///|
+/// ドロップシャドウフィルタを作成
+fn create_drop_shadow_filter(
+  id : String,
+  blur : Double,
+  offset_y : Double,
+  opacity : Double,
+) -> @js.Any {
+  let filter = create_svg_element(
+    "filter",
+    [
+      ("id", id),
+      ("x", "-50%"),
+      ("y", "-50%"),
+      ("width", "200%"),
+      ("height", "200%"),
+    ],
+    [],
+  )
+  // feDropShadow を使用
+  let drop_shadow = create_svg_element(
+    "feDropShadow",
+    [
+      ("dx", "0"),
+      ("dy", @model.num_str(offset_y)),
+      ("stdDeviation", @model.num_str(blur)),
+      ("flood-opacity", @model.num_str(opacity)),
+    ],
+    [],
+  )
+  append_child_ffi(filter, drop_shadow)
+  filter
+}
+
+///|
+/// Canvas 背景レイヤーを描画
+/// - 境界外のグレー背景（テーマ連動）
+/// - ドキュメント境界（白/黒 rect + ドロップシャドウ）
+pub fn render_canvas_background(
+  doc_width : Double,
+  doc_height : Double,
+  viewport : @model.Viewport,
+  screen_width : Int,
+  screen_height : Int,
+  is_dark_theme : Bool,
+) -> Array[@js.Any] {
+  let result : Array[@js.Any] = []
+
+  // viewBox のサイズを計算
+  let vb_width = screen_width.to_double() / viewport.zoom
+  let vb_height = screen_height.to_double() / viewport.zoom
+
+  // 境界外背景を十分大きくする（viewBox の2倍程度 + スクロール領域）
+  let margin = 2000.0
+  let bg_x = viewport.scroll_x - margin
+  let bg_y = viewport.scroll_y - margin
+  let bg_width = vb_width + margin * 2.0
+  let bg_height = vb_height + margin * 2.0
+
+  // テーマに応じた色
+  let outer_bg_color = if is_dark_theme { "#333333" } else { "#e0e0e0" }
+  let doc_bg_color = if is_dark_theme { "#1a1a1a" } else { "#ffffff" }
+
+  // 1. 境界外背景（グレー）
+  let outer_bg = create_svg_element(
+    "rect",
+    [
+      ("x", @model.num_str(bg_x)),
+      ("y", @model.num_str(bg_y)),
+      ("width", @model.num_str(bg_width)),
+      ("height", @model.num_str(bg_height)),
+      ("fill", outer_bg_color),
+      ("pointer-events", "none"),
+    ],
+    [],
+  )
+  result.push(outer_bg)
+
+  // 2. ドキュメント境界（白/黒 + シャドウ）
+  let doc_bg = create_svg_element(
+    "rect",
+    [
+      ("x", "0"),
+      ("y", "0"),
+      ("width", @model.num_str(doc_width)),
+      ("height", @model.num_str(doc_height)),
+      ("fill", doc_bg_color),
+      ("filter", "url(#doc-shadow)"),
+      ("pointer-events", "none"),
+    ],
+    [],
+  )
+  result.push(doc_bg)
+
+  // 3. ドキュメント境界線（埋め込みモードでも見えるように）
+  let border_color = if is_dark_theme { "#555555" } else { "#cccccc" }
+  let doc_border = create_svg_element(
+    "rect",
+    [
+      ("x", "0"),
+      ("y", "0"),
+      ("width", @model.num_str(doc_width)),
+      ("height", @model.num_str(doc_height)),
+      ("fill", "none"),
+      ("stroke", border_color),
+      ("stroke-width", "1"),
+      ("pointer-events", "none"),
+    ],
+    [],
+  )
+  result.push(doc_border)
+  result
+}
+
+///|
+/// ドキュメントシャドウフィルタを defs に追加
+pub fn create_doc_shadow_filter(is_dark_theme : Bool) -> @js.Any {
+  let opacity = if is_dark_theme { 0.5 } else { 0.15 }
+  create_drop_shadow_filter("doc-shadow", 4.0, 2.0, opacity)
+}
+
+///|
+/// 全てのアンカーポイントを描画（ドラッグ中の可視化用）
+pub fn render_all_anchor_points(
+  elements : Array[@model.Element],
+  exclude_id : String,
+) -> Array[@js.Any] {
+  let result : Array[@js.Any] = []
+  for el in elements {
+    // 除外する要素はスキップ
+    if el.id == exclude_id {
+      continue
+    }
+    // Line 要素はスキップ（Line には接続しない）
+    if el.shape is @model.Line(_, _) {
+      continue
+    }
+    // 子要素はスキップ
+    if el.parent_id is Some(_) {
+      continue
+    }
+    // 全アンカーポイントを描画
+    for anchor_data in el.get_all_anchors() {
+      let (_, point) = anchor_data
+      let attrs : Array[(String, String)] = [
+        ("cx", @model.num_str(point.x)),
+        ("cy", @model.num_str(point.y)),
+        ("r", "4"),
+        ("fill", "rgba(0, 102, 255, 0.15)"),
+        ("stroke", "rgba(0, 102, 255, 0.35)"),
+        ("stroke-width", "1"),
+        ("pointer-events", "none"),
+      ]
+      result.push(create_svg_element("circle", attrs, []))
+    }
+  }
+  result
+}
+
+// =============================================================================
+// Luna VNode ベースのレンダリング（差分更新対応）
+// =============================================================================
+
+///|
+/// SVG ノードを作成（Luna の create_element_ns を使用、DomNode を返す）
+/// class 属性は luna の setClassName がSVG要素で動作しないため、別途 setAttribute で設定
+fn create_svg_node(
+  tag : String,
+  attrs : Array[(String, String)],
+  handlers : Array[(String, (@js.Any) -> Unit)],
+  children : Array[@element.DomNode],
+) -> @element.DomNode {
+  // class 属性を分離
+  let class_value : Ref[String?] = { val: None }
+  let luna_attrs : Array[(String, @element.AttrValue)] = []
+  for attr in attrs {
+    if attr.0 == "class" {
+      class_value.val = Some(attr.1)
+    } else {
+      luna_attrs.push((attr.0, @element.Static(attr.1)))
+    }
+  }
+  for handler in handlers {
+    luna_attrs.push((handler.0, @element.Handler(handler.1)))
+  }
+  let node = @element.create_element_ns(
+    @element.svg_ns, tag, luna_attrs, children,
+  )
+  // class 属性は直接 setAttribute で設定
+  if class_value.val is Some(cv) {
+    set_svg_attr_ffi(node.to_dom().as_any(), "class", cv)
+  }
+  node
+}
+
+///|
+/// 要素を DomNode に変換（Luna VNode ベース）
+pub fn render_element_node(
+  el : @model.Element,
+  is_selected : Bool,
+  parent? : @model.Element? = None,
+) -> @element.DomNode {
+  let attrs : Array[(String, String)] = []
+  attrs.push(("data-id", el.id))
+  let style = el.style
+  let _ = is_selected
+  match el.shape {
+    @model.Rect(w, h, rx, ry) => {
+      attrs.push(("x", @model.num_str(el.x)))
+      attrs.push(("y", @model.num_str(el.y)))
+      attrs.push(("width", @model.num_str(w)))
+      attrs.push(("height", @model.num_str(h)))
+      if rx is Some(v) {
+        attrs.push(("rx", @model.num_str(v)))
+      }
+      if ry is Some(v) {
+        attrs.push(("ry", @model.num_str(v)))
+      }
+      add_style_attrs(attrs, style)
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all")) // 透明でもクリック可能
+      create_svg_node("rect", attrs, [], [])
+    }
+    @model.Circle(r) => {
+      attrs.push(("cx", @model.num_str(el.x)))
+      attrs.push(("cy", @model.num_str(el.y)))
+      attrs.push(("r", @model.num_str(r)))
+      add_style_attrs(attrs, style)
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all")) // 透明でもクリック可能
+      create_svg_node("circle", attrs, [], [])
+    }
+    @model.Ellipse(rx, ry) => {
+      attrs.push(("cx", @model.num_str(el.x)))
+      attrs.push(("cy", @model.num_str(el.y)))
+      attrs.push(("rx", @model.num_str(rx)))
+      attrs.push(("ry", @model.num_str(ry)))
+      add_style_attrs(attrs, style)
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all")) // 透明でもクリック可能
+      create_svg_node("ellipse", attrs, [], [])
+    }
+    @model.Line(x2, y2) => {
+      let stroke_color = el.style.stroke.unwrap_or("#000000")
+      // 透明なヒットエリア
+      let hit_attrs : Array[(String, String)] = [
+        ("data-id", el.id),
+        ("x1", @model.num_str(el.x)),
+        ("y1", @model.num_str(el.y)),
+        ("x2", @model.num_str(x2)),
+        ("y2", @model.num_str(y2)),
+        ("stroke", "transparent"),
+        ("stroke-width", "24"),
+      ]
+      let hit_area = create_svg_node("line", hit_attrs, [], [])
+      // 子要素を収集
+      let children : Array[@element.DomNode] = [hit_area]
+      // 選択時はハイライト
+      if is_selected {
+        let highlight_attrs : Array[(String, String)] = [
+          ("x1", @model.num_str(el.x)),
+          ("y1", @model.num_str(el.y)),
+          ("x2", @model.num_str(x2)),
+          ("y2", @model.num_str(y2)),
+          ("stroke", "rgba(0, 102, 255, 0.3)"),
+          (
+            "stroke-width",
+            @model.num_str(el.style.stroke_width.unwrap_or(1.0) + 6.0),
+          ),
+          ("stroke-linecap", "round"),
+          ("pointer-events", "none"),
+        ]
+        children.push(create_svg_node("line", highlight_attrs, [], []))
+      }
+      // 実際の線
+      let line_attrs : Array[(String, String)] = [
+        ("x1", @model.num_str(el.x)),
+        ("y1", @model.num_str(el.y)),
+        ("x2", @model.num_str(x2)),
+        ("y2", @model.num_str(y2)),
+        ("pointer-events", "none"),
+      ]
+      add_style_attrs(line_attrs, el.style)
+      add_marker_attrs(line_attrs, el.style, stroke_color)
+      if el.transform is Some(t) {
+        line_attrs.push(("transform", t))
+      }
+      children.push(create_svg_node("line", line_attrs, [], []))
+      // グループ
+      create_svg_node(
+        "g",
+        [("data-id", el.id), ("data-element-type", "line"), ("cursor", "move")],
+        [],
+        children,
+      )
+    }
+    @model.Polyline(points) => {
+      let points_str = points.map(fn(p) { "\{p.x},\{p.y}" }).join(" ")
+      attrs.push(("points", points_str))
+      add_style_attrs(attrs, style)
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      create_svg_node("polyline", attrs, [], [])
+    }
+    @model.Path(d, _, _, _, _) => {
+      attrs.push(("d", d))
+      add_style_attrs(attrs, style)
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      create_svg_node("path", attrs, [], [])
+    }
+    @model.Image(src, w, h) => {
+      attrs.push(("href", src))
+      attrs.push(("x", @model.num_str(el.x)))
+      attrs.push(("y", @model.num_str(el.y)))
+      attrs.push(("width", @model.num_str(w)))
+      attrs.push(("height", @model.num_str(h)))
+      attrs.push(("preserveAspectRatio", "none"))
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all"))
+      create_svg_node("image", attrs, [], [])
+    }
+    @model.Text(content, font_size) => {
+      let size = font_size.unwrap_or(16.0)
+      let (text_x, text_y) = match parent {
+        Some(p) => {
+          let bbox = p.bounding_box()
+          (bbox.x + bbox.width / 2.0, bbox.y + bbox.height / 2.0)
+        }
+        None => (el.x, el.y)
+      }
+      // ヒットエリアサイズ計算
+      let (hit_width, hit_height) = if content.contains("\n") {
+        let lines : Array[String] = content
+          .split("\n")
+          .map(fn(sv) { sv.to_string() })
+          .collect()
+        let line_count = lines.length()
+        let line_height = size * 1.2
+        let total_height = line_count.to_double() * line_height
+        let max_line_len = lines.fold(init=0, fn(acc, line) {
+          let len = line.iter().count()
+          if len > acc {
+            len
+          } else {
+            acc
+          }
+        })
+        let estimated_width = max_line_len.to_double() * size * 0.55
+        let w = if estimated_width < 40.0 { 40.0 } else { estimated_width }
+        let h = if total_height < 24.0 { 24.0 } else { total_height }
+        (w, h)
+      } else {
+        let char_count = content.iter().count()
+        let estimated_width = char_count.to_double() * size * 0.55
+        let w = if estimated_width < 40.0 { 40.0 } else { estimated_width }
+        (w, size * 1.2)
+      }
+      // ヒットエリア（pointer-events: all で親要素より優先してクリックを受け取る）
+      let hit_attrs : Array[(String, String)] = [
+        ("data-id", el.id),
+        ("x", @model.num_str(text_x - hit_width / 2.0)),
+        ("y", @model.num_str(text_y - hit_height / 2.0)),
+        ("width", @model.num_str(hit_width)),
+        ("height", @model.num_str(hit_height)),
+        ("fill", "transparent"),
+        ("pointer-events", "all"),
+      ]
+      let hit_area = create_svg_node("rect", hit_attrs, [], [])
+      // テキスト要素（FFI で複数行テキストを設定するため、ref callback を使用）
+      attrs.push(("x", @model.num_str(text_x)))
+      attrs.push(("y", @model.num_str(text_y)))
+      attrs.push(("font-size", @model.num_str(size)))
+      // font-family があれば追加
+      if el.style.font_family is Some(ff) {
+        attrs.push(("font-family", ff))
+      }
+      attrs.push(("text-anchor", "middle"))
+      attrs.push(("dominant-baseline", "middle"))
+      attrs.push(("pointer-events", "none"))
+      // 親要素がある場合、テキスト色は親の stroke に揃える（Excalidraw 仕様）
+      match parent {
+        Some(p) =>
+          if p.style.stroke is Some(stroke_color) {
+            attrs.push(("fill", stroke_color))
+          } else {
+            add_style_attrs(attrs, style)
+          }
+        None => add_style_attrs(attrs, style)
+      }
+      if el.transform is Some(t) {
+        attrs.push(("transform", t))
+      }
+      // テキスト内容を設定するために __ref callback を使用
+      let luna_attrs : Array[(String, @element.AttrValue)] = []
+      for attr in attrs {
+        luna_attrs.push((attr.0, @element.Static(attr.1)))
+      }
+      // __ref で DOM 要素にアクセスしてテキストを設定
+      luna_attrs.push(
+        (
+          "__ref",
+          @element.Handler(fn(text_el) {
+            set_multiline_text_ffi(text_el, content, text_x, size)
+          }),
+        ),
+      )
+      let text_node = @element.create_element_ns(
+        @element.svg_ns,
+        "text",
+        luna_attrs,
+        [],
+      )
+      // グループ
+      create_svg_node(
+        "g",
+        [("data-id", el.id), ("data-element-type", "text"), ("cursor", "move")],
+        [],
+        [hit_area, text_node],
+      )
+    }
+  }
+}
+
+///|
+/// 矢印マーカーを DomNode として作成
+fn create_arrow_marker_node(id : String, is_start : Bool) -> @element.DomNode {
+  let path_d = if is_start { "M10,0 L0,5 L10,10" } else { "M0,0 L10,5 L0,10" }
+  // context-stroke で参照元のstrokeを継承
+  let path = create_svg_node(
+    "path",
+    [("d", path_d), ("fill", "context-stroke")],
+    [],
+    [],
+  )
+  create_svg_node(
+    "marker",
+    [
+      ("id", id),
+      ("markerWidth", "10"),
+      ("markerHeight", "10"),
+      ("refX", if is_start { "0" } else { "10" }),
+      ("refY", "5"),
+      ("orient", "auto"),
+      ("markerUnits", "strokeWidth"),
+    ],
+    [],
+    [path],
+  )
+}
+
+///|
+/// SVG defs を DomNode として作成
+pub fn create_arrow_defs_node() -> @element.DomNode {
+  let markers : Array[@element.DomNode] = []
+  // context-stroke マーカー（参照元のstrokeを継承）
+  markers.push(create_arrow_marker_node("arrow-start-context", true))
+  markers.push(create_arrow_marker_node("arrow-end-context", false))
+  create_svg_node("defs", [], [], markers)
+}
+
+///|
+/// グリッド線を DomNode として作成
+pub fn render_grid_nodes(
+  width : Int,
+  height : Int,
+  grid_size : Int,
+  viewport : @model.Viewport,
+) -> Array[@element.DomNode] {
+  let lines : Array[@element.DomNode] = []
+  let size = grid_size.to_double()
+  let vb_width = width.to_double() / viewport.zoom
+  let vb_height = height.to_double() / viewport.zoom
+  let start_x = viewport.scroll_x
+  let start_y = viewport.scroll_y
+  let end_x = start_x + vb_width
+  let end_y = start_y + vb_height
+  let grid_start_x = (start_x / size).floor() * size
+  let grid_start_y = (start_y / size).floor() * size
+  // 縦線
+  let mut x = grid_start_x
+  while x <= end_x {
+    lines.push(
+      create_svg_node(
+        "line",
+        [
+          ("x1", x.to_string()),
+          ("y1", start_y.to_string()),
+          ("x2", x.to_string()),
+          ("y2", end_y.to_string()),
+          ("stroke", "#e0e0e0"),
+          ("stroke-width", "0.5"),
+        ],
+        [],
+        [],
+      ),
+    )
+    x = x + size
+  }
+  // 横線
+  let mut y = grid_start_y
+  while y <= end_y {
+    lines.push(
+      create_svg_node(
+        "line",
+        [
+          ("x1", start_x.to_string()),
+          ("y1", y.to_string()),
+          ("x2", end_x.to_string()),
+          ("y2", y.to_string()),
+          ("stroke", "#e0e0e0"),
+          ("stroke-width", "0.5"),
+        ],
+        [],
+        [],
+      ),
+    )
+    y = y + size
+  }
+  lines
+}
+
+///|
+/// リサイズハンドルを DomNode として作成
+pub fn render_resize_handles_nodes(
+  el : @model.Element,
+) -> Array[@element.DomNode] {
+  let half = handle_size / 2.0
+  let handles : Array[@element.DomNode] = []
+  match el.shape {
+    @model.Line(x2, y2) => {
+      let positions = [("line-start", el.x, el.y), ("line-end", x2, y2)]
+      for pos in positions {
+        let (handle_id, cx, cy) = pos
+        // ヒットエリア
+        let hit_area = create_svg_node(
+          "circle",
+          [
+            ("cx", @model.num_str(cx)),
+            ("cy", @model.num_str(cy)),
+            ("r", "12"),
+            ("fill", "transparent"),
+            ("cursor", "move"),
+            ("data-handle", handle_id),
+            ("data-element-id", el.id),
+          ],
+          [],
+          [],
+        )
+        // 可視ハンドル
+        let visible = create_svg_node(
+          "circle",
+          [
+            ("cx", @model.num_str(cx)),
+            ("cy", @model.num_str(cy)),
+            ("r", "5"),
+            ("fill", "#0066ff"),
+            ("stroke", "#ffffff"),
+            ("stroke-width", "2"),
+            ("pointer-events", "none"),
+          ],
+          [],
+          [],
+        )
+        handles.push(
+          create_svg_node("g", [("class", "line-handle-group")], [], [
+            hit_area, visible,
+          ]),
+        )
+      }
+    }
+    _ => {
+      let bbox = el.bounding_box()
+      let positions = [
+        ("nw", bbox.x - half, bbox.y - half, "nwse-resize"),
+        ("ne", bbox.x + bbox.width - half, bbox.y - half, "nesw-resize"),
+        ("sw", bbox.x - half, bbox.y + bbox.height - half, "nesw-resize"),
+        (
+          "se",
+          bbox.x + bbox.width - half,
+          bbox.y + bbox.height - half,
+          "nwse-resize",
+        ),
+      ]
+      for pos in positions {
+        let (handle_id, hx, hy, cursor) = pos
+        handles.push(
+          create_svg_node(
+            "rect",
+            [
+              ("data-handle", handle_id),
+              ("data-element-id", el.id),
+              ("x", @model.num_str(hx)),
+              ("y", @model.num_str(hy)),
+              ("width", @model.num_str(handle_size)),
+              ("height", @model.num_str(handle_size)),
+              ("fill", "#0066ff"),
+              ("stroke", "#ffffff"),
+              ("stroke-width", "1"),
+              ("cursor", cursor),
+            ],
+            [],
+            [],
+          ),
+        )
+      }
+    }
+  }
+  handles
+}
+
+///|
+/// アンカーポイントを DomNode として作成
+pub fn render_element_anchors_nodes(
+  el : @model.Element,
+) -> Array[@element.DomNode] {
+  let result : Array[@element.DomNode] = []
+  if el.shape is @model.Line(_, _) {
+    return result
+  }
+  for anchor_data in el.get_all_anchors() {
+    let (anchor, point) = anchor_data
+    if anchor == @model.Center ||
+      anchor == @model.TopLeft ||
+      anchor == @model.TopRight ||
+      anchor == @model.BottomLeft ||
+      anchor == @model.BottomRight {
+      continue
+    }
+    let anchor_name = @model.anchor_to_string(anchor)
+    result.push(
+      create_svg_node(
+        "circle",
+        [
+          ("cx", @model.num_str(point.x)),
+          ("cy", @model.num_str(point.y)),
+          ("r", "5"),
+          ("fill", "rgba(100, 100, 255, 0.15)"),
+          ("stroke", "rgba(100, 100, 255, 0.4)"),
+          ("stroke-width", "1"),
+          ("cursor", "crosshair"),
+          ("class", "anchor-point"),
+          ("data-anchor", anchor_name),
+          ("data-anchor-element", el.id),
+        ],
+        [],
+        [],
+      ),
+    )
+  }
+  result
+}
+
+///|
+/// 矩形選択ボックスを DomNode として作成
+pub fn render_selection_box_node(
+  box_state : @model.BoxSelectState,
+) -> @element.DomNode {
+  let bbox = box_state.to_bbox()
+  create_svg_node(
+    "rect",
+    [
+      ("x", @model.num_str(bbox.x)),
+      ("y", @model.num_str(bbox.y)),
+      ("width", @model.num_str(bbox.width)),
+      ("height", @model.num_str(bbox.height)),
+      ("fill", "rgba(0, 102, 255, 0.1)"),
+      ("stroke", "#0066ff"),
+      ("stroke-width", "1"),
+      ("stroke-dasharray", "4,2"),
+      ("pointer-events", "none"),
+    ],
+    [],
+    [],
+  )
+}
+
+///|
+/// 接続ポイントハイライトを DomNode として作成
+pub fn render_connection_highlight_node(
+  point : @model.Point,
+) -> @element.DomNode {
+  create_svg_node(
+    "circle",
+    [
+      ("cx", @model.num_str(point.x)),
+      ("cy", @model.num_str(point.y)),
+      ("r", "10"),
+      ("fill", "rgba(0, 200, 100, 0.4)"),
+      ("stroke", "#00c864"),
+      ("stroke-width", "2"),
+      ("pointer-events", "none"),
+    ],
+    [],
+    [],
+  )
+}
+
+// =============================================================================
+// Luna VNode + Dynamic 属性による差分更新（for_each 用）
+// =============================================================================
+
+///|
+/// グリッド線を VNode として描画
+pub fn render_grid_vnode(state : @core.EditorState) -> @element.DomNode {
+  let children : Array[@element.DomNode] = []
+  let grid_size = state.grid_size.get()
+  let viewport = state.viewport.get()
+  let size = grid_size.to_double()
+  // テーマに応じたグリッド色
+  let grid_color = match state.theme_mode.get() {
+    @model.Dark => "#333333" // ダークモードは暗めのグリッド
+    @model.Light => "#e0e0e0" // ライトモードは明るめのグリッド
+  }
+  // viewBox の範囲を計算
+  let vb_width = state.canvas_width.get().to_double() / viewport.zoom
+  let vb_height = state.canvas_height.get().to_double() / viewport.zoom
+  let start_x = viewport.scroll_x
+  let start_y = viewport.scroll_y
+  let end_x = start_x + vb_width
+  let end_y = start_y + vb_height
+  // グリッドの開始位置を計算
+  let grid_start_x = (start_x / size).floor() * size
+  let grid_start_y = (start_y / size).floor() * size
+  // 縦線
+  let mut x = grid_start_x
+  while x <= end_x {
+    children.push(
+      create_svg_node(
+        "line",
+        [
+          ("x1", x.to_string()),
+          ("y1", start_y.to_string()),
+          ("x2", x.to_string()),
+          ("y2", end_y.to_string()),
+          ("stroke", grid_color),
+          ("stroke-width", "0.5"),
+        ],
+        [],
+        [],
+      ),
+    )
+    x = x + size
+  }
+  // 横線
+  let mut y = grid_start_y
+  while y <= end_y {
+    children.push(
+      create_svg_node(
+        "line",
+        [
+          ("x1", start_x.to_string()),
+          ("y1", y.to_string()),
+          ("x2", end_x.to_string()),
+          ("y2", y.to_string()),
+          ("stroke", grid_color),
+          ("stroke-width", "0.5"),
+        ],
+        [],
+        [],
+      ),
+    )
+    y = y + size
+  }
+  @element.fragment(children)
+}
+
+///|
+/// 要素を VNode として描画（Effect で直接 DOM 更新）
+pub fn render_element_vnode(
+  state : @core.EditorState,
+  id : String,
+) -> @element.DomNode {
+  // 現在の要素を取得（初期値）
+  guard state.find_element(id) is Some(el) else { return @element.fragment([]) }
+
+  // 要素の種類に応じて Effect ベースの VNode を作成
+  // テキスト編集中の visibility 制御は Effect 内で行う
+  render_element_with_effect(state, id, el)
+}
+
+///|
+/// Effect で直接 DOM を更新する要素レンダリング
+fn render_element_with_effect(
+  state : @core.EditorState,
+  id : String,
+  initial_el : @model.Element,
+) -> @element.DomNode {
+  // DOM 要素への参照
+  let el_ref : Ref[@js.Any?] = { val: None }
+
+  // 初期レンダリング時の親要素ストローク色を取得
+  let initial_parent_stroke = @model.get_parent_stroke(
+    state.elements.get(),
+    initial_el.parent_id,
+  )
+
+  // render_effect で Signal 変更時に直接 DOM を更新（同期的）
+  // 位置・サイズの変更を全て即座に反映
+  let _ = @signal.render_effect(fn() {
+    let elements = state.elements.get()
+    guard el_ref.val is Some(dom_el) else { return }
+
+    // 現在の要素を検索
+    let current_el : @model.Element? = {
+      let mut found : @model.Element? = None
+      for e in elements {
+        if e.id == id {
+          found = Some(e)
+          break
+        }
+      }
+      found
+    }
+    guard current_el is Some(el) else { return }
+
+    // 親要素のストローク色を取得（テキスト要素の色継承用）
+    let parent_stroke = @model.get_parent_stroke(elements, el.parent_id)
+    // 要素の属性を更新（位置・サイズ両方）
+    update_element_attrs(dom_el, el, parent_stroke)
+  })
+
+  // テキスト編集状態の変化を監視して visibility を制御（同期的）
+  let _ = @signal.render_effect(fn() {
+    let text_edit = state.text_edit.get()
+    guard el_ref.val is Some(dom_el) else { return }
+
+    // テキスト編集中かどうかをチェック
+    let is_editing = match text_edit {
+      Some(edit_state) => edit_state.editing_id == Some(id)
+      None => false
+    }
+
+    // 編集中は非表示、それ以外は表示
+    if is_editing {
+      set_svg_attr_ffi(dom_el, "visibility", "hidden")
+    } else {
+      set_svg_attr_ffi(dom_el, "visibility", "visible")
+    }
+  })
+
+  // 初期 VNode を作成（__ref で DOM 参照を取得）
+  create_element_vnode_with_ref(initial_el, el_ref, initial_parent_stroke)
+}
+
+///|
+/// 要素の属性を直接 DOM 更新（位置・サイズ・スタイル）
+/// parent_stroke: 親要素のストローク色（テキスト要素の場合に使用）
+fn update_element_attrs(
+  dom_el : @js.Any,
+  el : @model.Element,
+  parent_stroke : String?,
+) -> Unit {
+  // 位置・サイズの更新
+  match el.shape {
+    @model.Rect(w, h, _, _) => {
+      set_svg_attr_ffi(dom_el, "x", @model.num_str(el.x))
+      set_svg_attr_ffi(dom_el, "y", @model.num_str(el.y))
+      set_svg_attr_ffi(dom_el, "width", @model.num_str(w))
+      set_svg_attr_ffi(dom_el, "height", @model.num_str(h))
+      // スタイルの更新
+      update_style_attrs(dom_el, el.style)
+    }
+    @model.Circle(r) => {
+      set_svg_attr_ffi(dom_el, "cx", @model.num_str(el.x))
+      set_svg_attr_ffi(dom_el, "cy", @model.num_str(el.y))
+      set_svg_attr_ffi(dom_el, "r", @model.num_str(r))
+      // スタイルの更新
+      update_style_attrs(dom_el, el.style)
+    }
+    @model.Ellipse(rx, ry) => {
+      set_svg_attr_ffi(dom_el, "cx", @model.num_str(el.x))
+      set_svg_attr_ffi(dom_el, "cy", @model.num_str(el.y))
+      set_svg_attr_ffi(dom_el, "rx", @model.num_str(rx))
+      set_svg_attr_ffi(dom_el, "ry", @model.num_str(ry))
+      // スタイルの更新
+      update_style_attrs(dom_el, el.style)
+    }
+    @model.Line(x2, y2) =>
+      // Line はグループ内の子要素を更新
+      update_line_children_with_style(dom_el, el.x, el.y, x2, y2, el.style)
+    @model.Path(d, start_x, start_y, _, _) =>
+      // Path はグループ内の子要素を更新
+      // transform は (el.x - start_x, el.y - start_y) で計算
+      update_path_children_with_style(
+        dom_el,
+        d,
+        el.x - start_x,
+        el.y - start_y,
+        el.style,
+      )
+    @model.Image(src, w, h) => {
+      set_svg_attr_ffi(dom_el, "href", src)
+      set_svg_attr_ffi(dom_el, "x", @model.num_str(el.x))
+      set_svg_attr_ffi(dom_el, "y", @model.num_str(el.y))
+      set_svg_attr_ffi(dom_el, "width", @model.num_str(w))
+      set_svg_attr_ffi(dom_el, "height", @model.num_str(h))
+      set_svg_attr_ffi(dom_el, "preserveAspectRatio", "none")
+      if el.transform is Some(t) {
+        set_svg_attr_ffi(dom_el, "transform", t)
+      }
+    }
+    @model.Text(content, font_size) => {
+      // Text はグループ内の子要素を更新
+      let size = font_size.unwrap_or(16.0)
+      // 親要素がある場合、テキスト色は親の stroke に揃える（Excalidraw 仕様）
+      let text_fill = @model.get_text_fill_color(el.style, parent_stroke)
+      let stroke = el.style.stroke.unwrap_or("")
+      let stroke_width = el.style.stroke_width.unwrap_or(0.0)
+      let font_family = el.style.font_family.unwrap_or("")
+      update_text_children_with_style(
+        dom_el,
+        el.x,
+        el.y,
+        content,
+        size,
+        text_fill,
+        stroke,
+        stroke_width,
+        font_family,
+      )
+    }
+    _ => ()
+  }
+}
+
+///|
+/// スタイル属性を直接 DOM 更新
+fn update_style_attrs(dom_el : @js.Any, style : @model.Style) -> Unit {
+  // fill
+  match style.fill {
+    Some(v) => set_svg_attr_ffi(dom_el, "fill", v)
+    None => set_svg_attr_ffi(dom_el, "fill", "none")
+  }
+  // stroke
+  if style.stroke is Some(v) {
+    set_svg_attr_ffi(dom_el, "stroke", v)
+  }
+  // stroke-width
+  if style.stroke_width is Some(v) {
+    set_svg_attr_ffi(dom_el, "stroke-width", @model.num_str(v))
+  }
+  // opacity
+  if style.opacity is Some(v) {
+    set_svg_attr_ffi(dom_el, "opacity", @model.num_str(v))
+  }
+}
+
+///|
+/// Line グループの子要素を更新（スタイル含む）
+fn update_line_children_with_style(
+  group : @js.Any,
+  x1 : Double,
+  y1 : Double,
+  x2 : Double,
+  y2 : Double,
+  style : @model.Style,
+) -> Unit {
+  let stroke = style.stroke.unwrap_or("#000000")
+  let stroke_width = style.stroke_width.unwrap_or(1.0)
+  update_line_children_ffi(group, x1, y1, x2, y2, stroke, stroke_width)
+}
+
+///|
+/// Path グループの子要素を更新（スタイル含む）
+fn update_path_children_with_style(
+  group : @js.Any,
+  d : String,
+  x : Double,
+  y : Double,
+  style : @model.Style,
+) -> Unit {
+  let stroke = style.stroke.unwrap_or("#000000")
+  let stroke_width = style.stroke_width.unwrap_or(1.0)
+  let fill = style.fill.unwrap_or("none")
+  update_path_children_ffi(group, d, x, y, stroke, stroke_width, fill)
+}
+
+///|
+/// Path グループの子要素を更新（FFI）
+extern "js" fn update_path_children_ffi(
+  group : @js.Any,
+  d : String,
+  x : Double,
+  y : Double,
+  stroke : String,
+  stroke_width : Double,
+  fill : String,
+) =
+  #| (group, d, x, y, stroke, strokeWidth, fill) => {
+  #|   // グループに transform を適用
+  #|   if (x !== 0 || y !== 0) {
+  #|     group.setAttribute('transform', `translate(${x}, ${y})`);
+  #|   } else {
+  #|     group.removeAttribute('transform');
+  #|   }
+  #|   const children = group.children;
+  #|   for (let i = 0; i < children.length; i++) {
+  #|     const child = children[i];
+  #|     if (child.tagName === 'path') {
+  #|       child.setAttribute('d', d);
+  #|       // 実際のパス（pointer-events: none）のみスタイル更新
+  #|       if (child.getAttribute('pointer-events') === 'none') {
+  #|         child.setAttribute('stroke', stroke);
+  #|         child.setAttribute('stroke-width', strokeWidth);
+  #|         child.setAttribute('fill', fill);
+  #|       }
+  #|     }
+  #|   }
+  #| }
+
+///|
+/// Line グループの子要素を更新（FFI）
+extern "js" fn update_line_children_ffi(
+  group : @js.Any,
+  x1 : Double,
+  y1 : Double,
+  x2 : Double,
+  y2 : Double,
+  stroke : String,
+  stroke_width : Double,
+) =
+  #| (group, x1, y1, x2, y2, stroke, strokeWidth) => {
+  #|   const children = group.children;
+  #|   for (let i = 0; i < children.length; i++) {
+  #|     const child = children[i];
+  #|     if (child.tagName === 'line') {
+  #|       child.setAttribute('x1', x1);
+  #|       child.setAttribute('y1', y1);
+  #|       child.setAttribute('x2', x2);
+  #|       child.setAttribute('y2', y2);
+  #|       // 実際の線（pointer-events: none）のみスタイル更新
+  #|       if (child.getAttribute('pointer-events') === 'none') {
+  #|         child.setAttribute('stroke', stroke);
+  #|         child.setAttribute('stroke-width', strokeWidth);
+  #|       }
+  #|     }
+  #|   }
+  #| }
+
+///|
+/// Text グループの子要素を更新（スタイル含む）
+extern "js" fn update_text_children_with_style(
+  group : @js.Any,
+  x : Double,
+  y : Double,
+  content : String,
+  font_size : Double,
+  fill : String,
+  stroke : String,
+  stroke_width : Double,
+  font_family : String,
+) =
+  #| (group, x, y, content, fontSize, fill, stroke, strokeWidth, fontFamily) => {
+  #|   const children = group.children;
+  #|   // ヒットエリアのサイズを計算（係数0.55に統一）
+  #|   const lines = content.split('\n');
+  #|   const lineCount = lines.length;
+  #|   const lineHeight = fontSize * 1.2;
+  #|   const totalHeight = lineCount * lineHeight;
+  #|   const maxLineLen = lines.reduce((max, line) => Math.max(max, line.length), 0);
+  #|   const estimatedWidth = maxLineLen * fontSize * 0.55;
+  #|   const minWidth = fontSize * 2.0;
+  #|   const hitWidth = Math.max(estimatedWidth, minWidth);
+  #|   const hitHeight = Math.max(totalHeight, fontSize * 1.2);
+  #|   for (let i = 0; i < children.length; i++) {
+  #|     const child = children[i];
+  #|     if (child.tagName === 'rect') {
+  #|       // ヒットエリア
+  #|       child.setAttribute('x', x - hitWidth / 2);
+  #|       child.setAttribute('y', y - hitHeight / 2);
+  #|       child.setAttribute('width', hitWidth);
+  #|       child.setAttribute('height', hitHeight);
+  #|     } else if (child.tagName === 'text') {
+  #|       // テキスト要素
+  #|       child.setAttribute('x', x);
+  #|       child.setAttribute('y', y);
+  #|       child.setAttribute('font-size', fontSize);
+  #|       // フォントファミリー更新
+  #|       if (fontFamily) {
+  #|         child.setAttribute('font-family', fontFamily);
+  #|       } else {
+  #|         child.removeAttribute('font-family');
+  #|       }
+  #|       // テキスト内容を更新
+  #|       if (lineCount === 1) {
+  #|         child.textContent = content;
+  #|       } else {
+  #|         // 複数行の場合はtspanを再構築
+  #|         child.innerHTML = '';
+  #|         const startOffset = -(lineCount - 1) * lineHeight / 2;
+  #|         lines.forEach((line, i) => {
+  #|           const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+  #|           tspan.setAttribute('x', x);
+  #|           tspan.setAttribute('dy', i === 0 ? startOffset : lineHeight);
+  #|           tspan.textContent = line;
+  #|           child.appendChild(tspan);
+  #|         });
+  #|       }
+  #|       // スタイル更新
+  #|       child.setAttribute('fill', fill);
+  #|       if (stroke) {
+  #|         child.setAttribute('stroke', stroke);
+  #|         child.setAttribute('stroke-width', strokeWidth);
+  #|       } else {
+  #|         child.removeAttribute('stroke');
+  #|         child.removeAttribute('stroke-width');
+  #|       }
+  #|     }
+  #|   }
+  #| }
+
+///|
+/// __ref 付きの VNode を作成
+/// parent_stroke: 親要素のストローク色（テキスト要素の色継承用）
+fn create_element_vnode_with_ref(
+  el : @model.Element,
+  el_ref : Ref[@js.Any?],
+  parent_stroke : String?,
+) -> @element.DomNode {
+  let attrs : Array[(String, String)] = []
+  attrs.push(("data-id", el.id))
+  match el.shape {
+    @model.Rect(w, h, rx, ry) => {
+      attrs.push(("x", @model.num_str(el.x)))
+      attrs.push(("y", @model.num_str(el.y)))
+      attrs.push(("width", @model.num_str(w)))
+      attrs.push(("height", @model.num_str(h)))
+      if rx is Some(v) {
+        attrs.push(("rx", @model.num_str(v)))
+      }
+      if ry is Some(v) {
+        attrs.push(("ry", @model.num_str(v)))
+      }
+      add_style_attrs(attrs, el.style)
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all")) // 透明でもクリック可能
+      create_svg_node_with_ref("rect", attrs, el_ref)
+    }
+    @model.Circle(r) => {
+      attrs.push(("cx", @model.num_str(el.x)))
+      attrs.push(("cy", @model.num_str(el.y)))
+      attrs.push(("r", @model.num_str(r)))
+      add_style_attrs(attrs, el.style)
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all")) // 透明でもクリック可能
+      create_svg_node_with_ref("circle", attrs, el_ref)
+    }
+    @model.Ellipse(rx, ry) => {
+      attrs.push(("cx", @model.num_str(el.x)))
+      attrs.push(("cy", @model.num_str(el.y)))
+      attrs.push(("rx", @model.num_str(rx)))
+      attrs.push(("ry", @model.num_str(ry)))
+      add_style_attrs(attrs, el.style)
+      attrs.push(("cursor", "move"))
+      attrs.push(("pointer-events", "all")) // 透明でもクリック可能
+      create_svg_node_with_ref("ellipse", attrs, el_ref)
+    }
+    @model.Line(x2, y2) =>
+      // Line はグループで __ref を取得
+      create_line_vnode_with_ref(el, x2, y2, el_ref)
+    @model.Path(d, _, _, _, _) =>
+      // Path はグループで __ref を取得
+      create_path_vnode_with_ref(el, d, el_ref)
+    @model.Image(src, w, h) => {
+      let attrs : Array[(String, String)] = [
+        ("data-id", el.id),
+        ("href", src),
+        ("x", @model.num_str(el.x)),
+        ("y", @model.num_str(el.y)),
+        ("width", @model.num_str(w)),
+        ("height", @model.num_str(h)),
+        ("preserveAspectRatio", "none"),
+        ("cursor", "move"),
+        ("pointer-events", "all"),
+      ]
+      create_svg_node_with_ref("image", attrs, el_ref)
+    }
+    @model.Text(content, font_size) =>
+      // Text はグループで __ref を取得（親のstroke色を渡す）
+      create_text_vnode_with_ref(el, content, font_size, el_ref, parent_stroke)
+    _ =>
+      // 他の形状は既存の静的レンダリング
+      render_element_node(el, false, parent=None)
+  }
+}
+
+///|
+/// Line 用の __ref 付き VNode を作成
+fn create_line_vnode_with_ref(
+  el : @model.Element,
+  x2 : Double,
+  y2 : Double,
+  el_ref : Ref[@js.Any?],
+) -> @element.DomNode {
+  let stroke_color = el.style.stroke.unwrap_or("#000000")
+  // 子要素を作成
+  let children : Array[@element.DomNode] = []
+
+  // 透明なヒットエリア
+  let hit_attrs : Array[(String, String)] = [
+    ("data-id", el.id),
+    ("x1", @model.num_str(el.x)),
+    ("y1", @model.num_str(el.y)),
+    ("x2", @model.num_str(x2)),
+    ("y2", @model.num_str(y2)),
+    ("stroke", "transparent"),
+    ("stroke-width", "24"),
+  ]
+  children.push(create_svg_node("line", hit_attrs, [], []))
+
+  // 実際の線
+  let line_attrs : Array[(String, String)] = [
+    ("x1", @model.num_str(el.x)),
+    ("y1", @model.num_str(el.y)),
+    ("x2", @model.num_str(x2)),
+    ("y2", @model.num_str(y2)),
+    ("pointer-events", "none"),
+  ]
+  add_style_attrs(line_attrs, el.style)
+  add_marker_attrs(line_attrs, el.style, stroke_color)
+  children.push(create_svg_node("line", line_attrs, [], []))
+
+  // グループを作成（__ref 付き）
+  let group_attrs : Array[(String, @element.AttrValue)] = [
+    ("data-id", @element.Static(el.id)),
+    ("data-element-type", @element.Static("line")),
+    ("cursor", @element.Static("move")),
+    ("__ref", @element.Handler(fn(dom) { el_ref.val = Some(dom) })),
+  ]
+  @element.create_element_ns(@element.svg_ns, "g", group_attrs, children)
+}
+
+///|
+/// Path 用の __ref 付き VNode を作成
+fn create_path_vnode_with_ref(
+  el : @model.Element,
+  d : String,
+  el_ref : Ref[@js.Any?],
+) -> @element.DomNode {
+  // 子要素を作成
+  let children : Array[@element.DomNode] = []
+
+  // 透明なヒットエリア（パスに沿った太い線）
+  let hit_attrs : Array[(String, String)] = [
+    ("data-id", el.id),
+    ("d", d),
+    ("fill", "none"),
+    ("stroke", "transparent"),
+    ("stroke-width", "16"),
+    ("stroke-linecap", "round"),
+    ("stroke-linejoin", "round"),
+  ]
+  children.push(create_svg_node("path", hit_attrs, [], []))
+
+  // 実際のパス
+  let path_attrs : Array[(String, String)] = [
+    ("d", d),
+    ("pointer-events", "none"),
+  ]
+  add_style_attrs(path_attrs, el.style)
+  children.push(create_svg_node("path", path_attrs, [], []))
+
+  // グループを作成（__ref 付き）
+  let group_attrs : Array[(String, @element.AttrValue)] = [
+    ("data-id", @element.Static(el.id)),
+    ("data-element-type", @element.Static("path")),
+    ("cursor", @element.Static("move")),
+    ("__ref", @element.Handler(fn(dom) { el_ref.val = Some(dom) })),
+  ]
+  @element.create_element_ns(@element.svg_ns, "g", group_attrs, children)
+}
+
+///|
+/// Text 用の __ref 付き VNode を作成
+/// parent_stroke: 親要素のストローク色（テキスト色継承用）
+fn create_text_vnode_with_ref(
+  el : @model.Element,
+  content : String,
+  font_size : Double?,
+  el_ref : Ref[@js.Any?],
+  parent_stroke : String?,
+) -> @element.DomNode {
+  let size = font_size.unwrap_or(16.0)
+  let text_x = el.x
+  let text_y = el.y
+
+  // ヒットエリアサイズ計算
+  let (hit_width, hit_height) = if content.contains("\n") {
+    let lines : Array[String] = content
+      .split("\n")
+      .map(fn(sv) { sv.to_string() })
+      .collect()
+    let line_count = lines.length()
+    let line_height = size * 1.2
+    let total_height = line_count.to_double() * line_height
+    let max_line_len = lines.fold(init=0, fn(acc, line) {
+      let len = line.iter().count()
+      if len > acc {
+        len
+      } else {
+        acc
+      }
+    })
+    let estimated_width = max_line_len.to_double() * size * 0.55
+    let w = if estimated_width < 40.0 { 40.0 } else { estimated_width }
+    let h = if total_height < 24.0 { 24.0 } else { total_height }
+    (w, h)
+  } else {
+    let char_count = content.iter().count()
+    let estimated_width = char_count.to_double() * size * 0.55
+    let w = if estimated_width < 40.0 { 40.0 } else { estimated_width }
+    (w, size * 1.2)
+  }
+
+  // 子要素を作成
+  let children : Array[@element.DomNode] = []
+
+  // ヒットエリア（pointer-events: all で親要素より優先してクリックを受け取る）
+  let hit_attrs : Array[(String, String)] = [
+    ("data-id", el.id),
+    ("x", @model.num_str(text_x - hit_width / 2.0)),
+    ("y", @model.num_str(text_y - hit_height / 2.0)),
+    ("width", @model.num_str(hit_width)),
+    ("height", @model.num_str(hit_height)),
+    ("fill", "transparent"),
+    ("pointer-events", "all"),
+  ]
+  children.push(create_svg_node("rect", hit_attrs, [], []))
+
+  // テキスト要素
+  // 親要素がある場合、テキスト色は親の stroke に揃える（Excalidraw 仕様）
+  let text_fill = @model.get_text_fill_color(el.style, parent_stroke)
+  let text_attrs : Array[(String, String)] = [
+    ("x", @model.num_str(text_x)),
+    ("y", @model.num_str(text_y)),
+    ("font-size", @model.num_str(size)),
+    ("text-anchor", "middle"),
+    ("dominant-baseline", "middle"),
+    ("pointer-events", "none"),
+    ("fill", text_fill),
+  ]
+  // font-family があれば追加
+  if el.style.font_family is Some(ff) {
+    text_attrs.push(("font-family", ff))
+  }
+  // stroke があれば追加（テキストのアウトライン用）
+  if el.style.stroke is Some(stroke) {
+    text_attrs.push(("stroke", stroke))
+    if el.style.stroke_width is Some(sw) {
+      text_attrs.push(("stroke-width", @model.num_str(sw)))
+    }
+  }
+
+  // テキスト内容を設定するために __ref callback を使用
+  let text_luna_attrs : Array[(String, @element.AttrValue)] = []
+  for attr in text_attrs {
+    text_luna_attrs.push((attr.0, @element.Static(attr.1)))
+  }
+  text_luna_attrs.push(
+    (
+      "__ref",
+      @element.Handler(fn(text_el) {
+        set_multiline_text_ffi(text_el, content, text_x, size)
+      }),
+    ),
+  )
+  let text_node = @element.create_element_ns(
+    @element.svg_ns,
+    "text",
+    text_luna_attrs,
+    [],
+  )
+  children.push(text_node)
+
+  // グループを作成（__ref 付き）
+  let group_attrs : Array[(String, @element.AttrValue)] = [
+    ("data-id", @element.Static(el.id)),
+    ("data-element-type", @element.Static("text")),
+    ("cursor", @element.Static("move")),
+    ("__ref", @element.Handler(fn(dom) { el_ref.val = Some(dom) })),
+  ]
+  @element.create_element_ns(@element.svg_ns, "g", group_attrs, children)
+}
+
+///|
+/// __ref 付き SVG ノードを作成
+fn create_svg_node_with_ref(
+  tag : String,
+  attrs : Array[(String, String)],
+  el_ref : Ref[@js.Any?],
+) -> @element.DomNode {
+  let luna_attrs : Array[(String, @element.AttrValue)] = []
+  for attr in attrs {
+    luna_attrs.push((attr.0, @element.Static(attr.1)))
+  }
+  // __ref で DOM 参照を取得
+  luna_attrs.push(
+    ("__ref", @element.Handler(fn(dom) { el_ref.val = Some(dom) })),
+  )
+  @element.create_element_ns(@element.svg_ns, tag, luna_attrs, [])
+}
+
+///|
+/// 選択オーバーレイ（ハンドル・アンカー）を描画（Effect ベース）
+pub fn render_selection_overlay(state : @core.EditorState) -> @element.DomNode {
+  // コンテナへの参照
+  let container_ref : Ref[@js.Any?] = { val: None }
+
+  // render_effect で選択要素の変更を監視して再描画（同期的）
+  let _ = @signal.render_effect(fn() {
+    let elements = state.elements.get()
+    let selected_ids = state.selected_ids.get()
+    guard container_ref.val is Some(container) else { return }
+
+    // コンテナをクリア
+    clear_children_ffi(container)
+
+    // 選択された要素のオーバーレイを描画
+    for sel_id in selected_ids {
+      // elements から直接検索（Effect 依存関係を正しく追跡）
+      let found_el : @model.Element? = {
+        let mut result : @model.Element? = None
+        for e in elements {
+          if e.id == sel_id {
+            result = Some(e)
+            break
+          }
+        }
+        result
+      }
+      if found_el is Some(el) {
+        // 接続されたアンカーポイントを黄色でハイライト（最背面）
+        let connected_highlights = render_connected_anchor_highlights(
+          elements, el,
+        )
+        for highlight in connected_highlights {
+          append_child_ffi(container, highlight)
+        }
+        // リサイズハンドル（単一選択かつリサイズ可能な場合のみ）
+        if selected_ids.length() == 1 && state.can_resize_element(el.id) {
+          let handles = render_resize_handles(el)
+          for handle in handles {
+            append_child_ffi(container, handle)
+          }
+        }
+        // アンカーポイント（最前面で描画してクリック可能に）
+        let anchors = render_element_anchors(el)
+        for anchor in anchors {
+          append_child_ffi(container, anchor)
+        }
+      }
+    }
+  })
+
+  // コンテナグループを作成
+  let attrs : Array[(String, @element.AttrValue)] = [
+    (
+      "__ref",
+      @element.Handler(fn(el) {
+        container_ref.val = Some(el)
+        // class 属性は直接 setAttribute で設定（luna の setClassName はSVG要素で動作しない）
+        set_svg_attr_ffi(el, "class", "selection-overlay")
+      }),
+    ),
+  ]
+  @element.create_element_ns(@element.svg_ns, "g", attrs, [])
+}
+
+///|
+/// 矩形選択ボックスを VNode として描画（Effect ベース）
+pub fn render_box_select_vnode(state : @core.EditorState) -> @element.DomNode {
+  let rect_ref : Ref[@js.Any?] = { val: None }
+  let _ = @signal.render_effect(fn() {
+    let box_state = state.box_select.get()
+    guard rect_ref.val is Some(rect) else { return }
+    guard box_state is Some(bs) else { return }
+    let bbox = bs.to_bbox()
+    set_svg_attr_ffi(rect, "x", @model.num_str(bbox.x))
+    set_svg_attr_ffi(rect, "y", @model.num_str(bbox.y))
+    set_svg_attr_ffi(rect, "width", @model.num_str(bbox.width))
+    set_svg_attr_ffi(rect, "height", @model.num_str(bbox.height))
+  })
+
+  // 初期値で rect を作成
+  let initial_box = state.box_select.get()
+  let (x, y, w, h) = match initial_box {
+    Some(bs) => {
+      let bbox = bs.to_bbox()
+      (bbox.x, bbox.y, bbox.width, bbox.height)
+    }
+    None => (0.0, 0.0, 0.0, 0.0)
+  }
+  let attrs : Array[(String, @element.AttrValue)] = [
+    ("x", @element.Static(@model.num_str(x))),
+    ("y", @element.Static(@model.num_str(y))),
+    ("width", @element.Static(@model.num_str(w))),
+    ("height", @element.Static(@model.num_str(h))),
+    ("fill", @element.Static("rgba(0, 102, 255, 0.1)")),
+    ("stroke", @element.Static("#0066ff")),
+    ("stroke-width", @element.Static("1")),
+    ("stroke-dasharray", @element.Static("4,2")),
+    ("pointer-events", @element.Static("none")),
+    ("__ref", @element.Handler(fn(el) { rect_ref.val = Some(el) })),
+  ]
+  @element.create_element_ns(@element.svg_ns, "rect", attrs, [])
+}
+
+///|
+/// 全アンカーポイントを VNode として描画（ライン編集中、Effect ベース）
+pub fn render_all_anchors_vnode(state : @core.EditorState) -> @element.DomNode {
+  let container_ref : Ref[@js.Any?] = { val: None }
+  let _ = @signal.render_effect(fn() {
+    let elements = state.elements.get()
+    let resize_state = state.resize_state.get()
+    guard container_ref.val is Some(container) else { return }
+    guard resize_state is Some(resize) else { return }
+
+    // コンテナをクリア
+    clear_children_ffi(container)
+    for el in elements {
+      // 編集中の要素はスキップ
+      if el.id == resize.element_id {
+        continue
+      }
+      // Line はスキップ
+      if el.shape is @model.Line(_, _) {
+        continue
+      }
+      // 子要素はスキップ
+      if el.parent_id is Some(_) {
+        continue
+      }
+      // アンカーポイント
+      let anchors = render_all_anchor_points([el], resize.element_id)
+      for anchor in anchors {
+        append_child_ffi(container, anchor)
+      }
+    }
+  })
+  let attrs : Array[(String, @element.AttrValue)] = [
+    (
+      "__ref",
+      @element.Handler(fn(el) {
+        container_ref.val = Some(el)
+        set_svg_attr_ffi(el, "class", "all-anchors")
+      }),
+    ),
+  ]
+  @element.create_element_ns(@element.svg_ns, "g", attrs, [])
+}
+
+///|
+/// 接続ハイライトを VNode として描画（Effect ベース）
+pub fn render_connection_highlight_vnode(
+  state : @core.EditorState,
+) -> @element.DomNode {
+  let circle_ref : Ref[@js.Any?] = { val: None }
+  let _ = @signal.render_effect(fn() {
+    let pending = state.pending_connection.get()
+    guard circle_ref.val is Some(circle) else { return }
+    guard pending is Some(p) else { return }
+    set_svg_attr_ffi(circle, "cx", @model.num_str(p.point.x))
+    set_svg_attr_ffi(circle, "cy", @model.num_str(p.point.y))
+  })
+
+  // 初期値で circle を作成
+  let initial = state.pending_connection.get()
+  let (cx, cy) = match initial {
+    Some(p) => (p.point.x, p.point.y)
+    None => (0.0, 0.0)
+  }
+  let attrs : Array[(String, @element.AttrValue)] = [
+    ("cx", @element.Static(@model.num_str(cx))),
+    ("cy", @element.Static(@model.num_str(cy))),
+    ("r", @element.Static("10")),
+    ("fill", @element.Static("rgba(0, 200, 100, 0.4)")),
+    ("stroke", @element.Static("#00c864")),
+    ("stroke-width", @element.Static("2")),
+    ("pointer-events", @element.Static("none")),
+    ("__ref", @element.Handler(fn(el) { circle_ref.val = Some(el) })),
+  ]
+  @element.create_element_ns(@element.svg_ns, "circle", attrs, [])
+}
+
+///|
+/// Canvas 背景を VNode として描画（Effect ベース）
+/// - 境界外のグレー背景（テーマ連動）
+/// - ドキュメント境界（白/黒 rect + ドロップシャドウ）
+pub fn render_canvas_background_vnode(
+  state : @core.EditorState,
+) -> @element.DomNode {
+  let container_ref : Ref[@js.Any?] = { val: None }
+
+  // render_effect で viewport / canvas サイズ変更を監視して再描画（同期的）
+  let _ = @signal.render_effect(fn() {
+    let viewport = state.viewport.get()
+    let doc_width = state.doc_width.get()
+    let doc_height = state.doc_height.get()
+    let canvas_w = state.canvas_width.get()
+    let canvas_h = state.canvas_height.get()
+    let theme = state.theme_mode.get()
+    let is_dark = theme == @model.Dark
+    guard container_ref.val is Some(container) else { return }
+
+    // コンテナをクリア
+    clear_children_ffi(container)
+
+    // 背景要素を生成
+    let bg_elements = render_canvas_background(
+      doc_width, doc_height, viewport, canvas_w, canvas_h, is_dark,
+    )
+
+    // コンテナに追加
+    for el in bg_elements {
+      append_child_ffi(container, el)
+    }
+  })
+
+  // コンテナグループを作成
+  let attrs : Array[(String, @element.AttrValue)] = [
+    (
+      "__ref",
+      @element.Handler(fn(el) {
+        container_ref.val = Some(el)
+        set_svg_attr_ffi(el, "class", "canvas-background")
+      }),
+    ),
+  ]
+  @element.create_element_ns(@element.svg_ns, "g", attrs, [])
+}
+
+///|
+/// ドキュメントシャドウフィルタを defs Node として作成
+pub fn create_doc_shadow_filter_node(is_dark_theme : Bool) -> @element.DomNode {
+  let opacity = if is_dark_theme { 0.5 } else { 0.15 }
+  let filter_attrs : Array[(String, String)] = [
+    ("id", "doc-shadow"),
+    ("x", "-50%"),
+    ("y", "-50%"),
+    ("width", "200%"),
+    ("height", "200%"),
+  ]
+  let drop_shadow_attrs : Array[(String, String)] = [
+    ("dx", "0"),
+    ("dy", "2"),
+    ("stdDeviation", "4"),
+    ("flood-opacity", @model.num_str(opacity)),
+  ]
+  let drop_shadow = create_svg_node("feDropShadow", drop_shadow_attrs, [], [])
+  create_svg_node("filter", filter_attrs, [], [drop_shadow])
+}

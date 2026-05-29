@@ -1,7 +1,7 @@
 import type {
   Block,
   CodeBlock,
-  ExcalidrawBlock,
+  MoonlightBlock,
   HeadingBlock,
   Inline,
   ListBlock,
@@ -10,16 +10,16 @@ import type {
   PapyrDocument,
   ParagraphBlock,
   TableBlock,
-} from '@f12o/papyr-core';
+} from "@f12o/papyr-core";
 import {
   codeBlock,
-  excalidrawBlock,
+  moonlightBlock,
   headingBlock,
   listBlock,
   mermaidBlock,
   paragraphBlock,
   tableBlock,
-} from '@f12o/papyr-core';
+} from "@f12o/papyr-core";
 
 export interface ProseMirrorMark {
   type: string;
@@ -38,60 +38,60 @@ export interface ConvertOptions {
   generateId?: () => string;
 }
 
-type Mark = NonNullable<Inline['marks']>[number];
+type Mark = NonNullable<Inline["marks"]>[number];
 
 const MARK_TO_PM: Record<Mark, string> = {
-  bold: 'bold',
-  italic: 'italic',
-  code: 'code',
-  strike: 'strike',
-  link: 'link',
+  bold: "bold",
+  italic: "italic",
+  code: "code",
+  strike: "strike",
+  link: "link",
 };
 
 const PM_TO_MARK: Record<string, Mark> = {
-  bold: 'bold',
-  strong: 'bold',
-  italic: 'italic',
-  em: 'italic',
-  code: 'code',
-  strike: 'strike',
-  s: 'strike',
-  link: 'link',
+  bold: "bold",
+  strong: "bold",
+  italic: "italic",
+  em: "italic",
+  code: "code",
+  strike: "strike",
+  s: "strike",
+  link: "link",
 };
 
 export function documentToProseMirror(doc: PapyrDocument): ProseMirrorNode {
   return {
-    type: 'doc',
+    type: "doc",
     content: doc.blocks.map(blockToPm),
   };
 }
 
 function blockToPm(block: Block): ProseMirrorNode {
   switch (block[0]) {
-    case 'Paragraph':
+    case "Paragraph":
       return paragraphToPm(block);
-    case 'Heading':
+    case "Heading":
       return headingToPm(block);
-    case 'List':
+    case "List":
       return listToPm(block);
-    case 'Code':
+    case "Code":
       return codeToPm(block);
-    case 'Mermaid':
+    case "Mermaid":
       return mermaidToPm(block);
-    case 'Table':
+    case "Table":
       return tableToPm(block);
-    case 'Excalidraw':
-      return excalidrawToPm(block);
+    case "Moonlight":
+      return moonlightToPm(block);
   }
 }
 
 function paragraphToPm(block: ParagraphBlock): ProseMirrorNode {
-  return { type: 'paragraph', content: inlineToPm(block[1].content) };
+  return { type: "paragraph", content: inlineToPm(block[1].content) };
 }
 
 function headingToPm(block: HeadingBlock): ProseMirrorNode {
   return {
-    type: 'heading',
+    type: "heading",
     attrs: { level: block[1].level },
     content: inlineToPm(block[1].content),
   };
@@ -99,14 +99,14 @@ function headingToPm(block: HeadingBlock): ProseMirrorNode {
 
 function listToPm(block: ListBlock): ProseMirrorNode {
   return {
-    type: block[1].ordered ? 'orderedList' : 'bulletList',
+    type: block[1].ordered ? "orderedList" : "bulletList",
     content: block[1].items.map(listItemToPm),
   };
 }
 
 function listItemToPm(item: ListItem): ProseMirrorNode {
   return {
-    type: 'listItem',
+    type: "listItem",
     content: item.blocks.map(blockToPm),
   };
 }
@@ -114,16 +114,18 @@ function listItemToPm(item: ListItem): ProseMirrorNode {
 function codeToPm(block: CodeBlock): ProseMirrorNode {
   const payload = block[1];
   return {
-    type: 'codeBlock',
-    ...(payload.language !== undefined && { attrs: { language: payload.language } }),
-    content: payload.source ? [{ type: 'text', text: payload.source }] : [],
+    type: "codeBlock",
+    ...(payload.language !== undefined && {
+      attrs: { language: payload.language },
+    }),
+    content: payload.source ? [{ type: "text", text: payload.source }] : [],
   };
 }
 
 function mermaidToPm(block: MermaidBlock): ProseMirrorNode {
   const payload = block[1];
   return {
-    type: 'papyrMermaid',
+    type: "papyrMermaid",
     attrs: {
       id: payload.id,
       source: payload.source,
@@ -134,22 +136,23 @@ function mermaidToPm(block: MermaidBlock): ProseMirrorNode {
 
 function tableToPm(block: TableBlock): ProseMirrorNode {
   const { id, ...data } = block[1];
-  return { type: 'papyrTable', attrs: { id, data } };
+  return { type: "papyrTable", attrs: { id, data } };
 }
 
-function excalidrawToPm(block: ExcalidrawBlock): ProseMirrorNode {
+function moonlightToPm(block: MoonlightBlock): ProseMirrorNode {
   const { id, ...data } = block[1];
-  return { type: 'papyrExcalidraw', attrs: { id, data } };
+  return { type: "papyrMoonlight", attrs: { id, data } };
 }
 
 function inlineToPm(runs: Inline[]): ProseMirrorNode[] {
   return runs.map((run) => {
     const marks: ProseMirrorMark[] = (run.marks ?? []).map((m) => {
-      if (m === 'link') return { type: 'link', attrs: { href: run.href ?? '' } };
+      if (m === "link")
+        return { type: "link", attrs: { href: run.href ?? "" } };
       return { type: MARK_TO_PM[m] };
     });
     return {
-      type: 'text',
+      type: "text",
       text: run.text,
       ...(marks.length > 0 && { marks }),
     };
@@ -173,14 +176,14 @@ function defaultIdGenerator(): () => string {
 
 function pmToBlock(node: ProseMirrorNode, makeId: () => string): Block[] {
   switch (node.type) {
-    case 'paragraph':
+    case "paragraph":
       return [
         paragraphBlock({
           id: makeId(),
           content: pmToInline(node.content ?? []),
         }),
       ];
-    case 'heading':
+    case "heading":
       return [
         headingBlock({
           id: makeId(),
@@ -188,41 +191,49 @@ function pmToBlock(node: ProseMirrorNode, makeId: () => string): Block[] {
           content: pmToInline(node.content ?? []),
         }),
       ];
-    case 'bulletList':
-    case 'orderedList':
+    case "bulletList":
+    case "orderedList":
       return [
         listBlock({
           id: makeId(),
-          ordered: node.type === 'orderedList',
+          ordered: node.type === "orderedList",
           items: (node.content ?? []).map((item) => pmListItem(item, makeId)),
         }),
       ];
-    case 'codeBlock': {
+    case "codeBlock": {
       const language = node.attrs?.language;
-      const source = (node.content ?? []).map((c) => c.text ?? '').join('');
+      const source = (node.content ?? []).map((c) => c.text ?? "").join("");
       return [
         codeBlock({
           id: makeId(),
-          ...(typeof language === 'string' && { language }),
+          ...(typeof language === "string" && { language }),
           source,
         }),
       ];
     }
-    case 'papyrMermaid':
+    case "papyrMermaid":
       return [
         mermaidBlock({
           id: resolveBlockId(node.attrs?.id, makeId),
-          source: String(node.attrs?.source ?? ''),
-          ...(typeof node.attrs?.caption === 'string' && { caption: node.attrs.caption }),
+          source: String(node.attrs?.source ?? ""),
+          ...(typeof node.attrs?.caption === "string" && {
+            caption: node.attrs.caption,
+          }),
         }),
       ];
-    case 'papyrTable': {
-      const data = (node.attrs?.data ?? {}) as Omit<TableBlock[1], 'id'>;
-      return [tableBlock({ id: resolveBlockId(node.attrs?.id, makeId), ...data })];
+    case "papyrTable": {
+      const data = (node.attrs?.data ?? {}) as Omit<TableBlock[1], "id">;
+      return [
+        tableBlock({ id: resolveBlockId(node.attrs?.id, makeId), ...data }),
+      ];
     }
-    case 'papyrExcalidraw': {
-      const data = (node.attrs?.data ?? {}) as Omit<ExcalidrawBlock[1], 'id'>;
-      return [excalidrawBlock({ id: resolveBlockId(node.attrs?.id, makeId), ...data })];
+    case "papyrMoonlight": {
+      return [
+        moonlightBlock({
+          id: resolveBlockId(node.attrs?.id, makeId),
+          ...normalizeMoonlightData(node.attrs?.data),
+        }),
+      ];
     }
     default:
       return [];
@@ -230,18 +241,26 @@ function pmToBlock(node: ProseMirrorNode, makeId: () => string): Block[] {
 }
 
 function pmListItem(itemNode: ProseMirrorNode, makeId: () => string): ListItem {
-  const blocks = (itemNode.content ?? []).flatMap((node) => pmToBlock(node, makeId));
+  const blocks = (itemNode.content ?? []).flatMap((node) =>
+    pmToBlock(node, makeId),
+  );
   return {
-    blocks: blocks.length > 0 ? blocks : [paragraphBlock({ id: makeId(), content: [] })],
+    blocks:
+      blocks.length > 0
+        ? blocks
+        : [paragraphBlock({ id: makeId(), content: [] })],
   };
 }
 
 function pmToInline(nodes: ProseMirrorNode[]): Inline[] {
   return nodes.flatMap((node) => {
-    if (node.type !== 'text' || node.text === undefined) return [];
+    if (node.type !== "text" || node.text === undefined) return [];
     const marks = collectMarks(node.marks ?? []);
-    const linkMark = (node.marks ?? []).find((m) => m.type === 'link');
-    const href = typeof linkMark?.attrs?.href === 'string' ? linkMark.attrs.href : undefined;
+    const linkMark = (node.marks ?? []).find((m) => m.type === "link");
+    const href =
+      typeof linkMark?.attrs?.href === "string"
+        ? linkMark.attrs.href
+        : undefined;
     const inline: Inline = {
       text: node.text,
       ...(marks.length > 0 && { marks }),
@@ -261,12 +280,26 @@ function collectMarks(pmMarks: ProseMirrorMark[]): Mark[] {
 }
 
 function clampLevel(value: unknown): 1 | 2 | 3 | 4 | 5 | 6 {
-  const n = typeof value === 'number' ? value : 1;
+  const n = typeof value === "number" ? value : 1;
   if (n < 1) return 1;
   if (n > 6) return 6;
   return n as 1 | 2 | 3 | 4 | 5 | 6;
 }
 
 function resolveBlockId(value: unknown, makeId: () => string): string {
-  return typeof value === 'string' && value.trim().length > 0 ? value : makeId();
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : makeId();
+}
+
+function normalizeMoonlightData(data: unknown): Omit<MoonlightBlock[1], "id"> {
+  if (!isRecord(data)) return { svg: "" };
+  return {
+    svg: typeof data.svg === "string" ? data.svg : "",
+    ...(typeof data.caption === "string" && { caption: data.caption }),
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

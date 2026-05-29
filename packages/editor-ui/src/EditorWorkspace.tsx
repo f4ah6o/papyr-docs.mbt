@@ -1,88 +1,73 @@
-import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ExcalidrawInitialDataState } from '@excalidraw/excalidraw/types/types';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createEditor, type EditorHandle } from "@f12o/papyr-moonlight";
 import {
   EditorContent,
   NodeViewWrapper,
   ReactNodeViewRenderer,
   useEditor,
   type NodeViewProps,
-} from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import type { ExcalidrawBlock, MermaidBlock, PapyrDocument, TableBlock } from '@f12o/papyr-core';
-import { excalidrawBlock, mermaidBlock, tableBlock } from '@f12o/papyr-core';
+} from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import type {
+  MoonlightBlock,
+  MermaidBlock,
+  PapyrDocument,
+  TableBlock,
+} from "@f12o/papyr-core";
+import { moonlightBlock, mermaidBlock, tableBlock } from "@f12o/papyr-core";
 import {
   appendBlock,
   createBlockId,
-  createDefaultExcalidrawBlock,
+  createDefaultMoonlightBlock,
   createDefaultMermaidBlock,
   documentToProseMirror,
-  findEmbeddedBlock,
   listEmbeddedBlocks,
-  ExcalidrawBlockExtension,
+  MoonlightBlockExtension,
   MermaidBlockExtension,
   PapyrListItemExtension,
   proseMirrorToDocument,
-  sanitizeExcalidrawAppState,
   TableBlockExtension,
   updateEmbeddedBlock,
   type EmbeddedBlock,
   type ProseMirrorNode,
-} from '@f12o/papyr-editor';
-import { parseMarkdown, serializeDocument } from '@f12o/papyr-markdown';
-import { renderDocumentPreview } from '@f12o/papyr-preview';
+} from "@f12o/papyr-editor";
+import { parseMarkdown, serializeDocument } from "@f12o/papyr-markdown";
+import { renderDocumentPreview } from "@f12o/papyr-preview";
 import {
   collectEmbeddedPreviewBlocks,
   embeddedBlockId,
   embeddedBlockType,
   getEmbeddedBlockEditorTitle,
-  isEditableExcalidrawBlock,
+  isEditableMoonlightBlock,
   isEditableMermaidBlock,
   isEditableTableBlock,
   normalizeEditableTableColumns,
   type EditableEmbeddedBlock,
   type EditableEmbeddedBlockType,
-} from './embedded-blocks.js';
-import { shouldUseNativeTextareaFallback } from './editor-platform.js';
-
-const ExcalidrawLazy = React.lazy(() =>
-  import('@excalidraw/excalidraw').then((mod) => ({ default: mod.Excalidraw })),
-);
-
-class ExcalidrawErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { failed: boolean }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { failed: false };
-  }
-
-  static getDerivedStateFromError(): { failed: boolean } {
-    return { failed: true };
-  }
-
-  override render() {
-    if (this.state.failed) {
-      return (
-        <div className="editor-workspace__excalidraw-error">
-          Excalidraw の読み込みに失敗しました。ページを再読み込みしてください。
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
+} from "./embedded-blocks.js";
+import { shouldUseNativeTextareaFallback } from "./editor-platform.js";
 
 function TablePreviewNodeView({ node }: NodeViewProps): JSX.Element {
-  const id = resolveNodeBlockId(node.attrs.id, 'table-preview');
+  const id = resolveNodeBlockId(node.attrs.id, "table-preview");
   const data = isRecord(node.attrs.data) ? node.attrs.data : {};
   const block = useMemo<TableBlock>(
     () =>
       tableBlock({
         id,
-        columns: Array.isArray(data.columns) ? (data.columns as TableBlock[1]['columns']) : [],
-        rows: Array.isArray(data.rows) ? (data.rows as TableBlock[1]['rows']) : [],
-        ...(typeof data.caption === 'string' && { caption: data.caption }),
+        columns: Array.isArray(data.columns)
+          ? (data.columns as TableBlock[1]["columns"])
+          : [],
+        rows: Array.isArray(data.rows)
+          ? (data.rows as TableBlock[1]["rows"])
+          : [],
+        ...(typeof data.caption === "string" && { caption: data.caption }),
       }),
     [data, id],
   );
@@ -101,9 +86,11 @@ function MermaidPreviewNodeView({ node }: NodeViewProps): JSX.Element {
   const block = useMemo<MermaidBlock>(
     () =>
       mermaidBlock({
-        id: resolveNodeBlockId(node.attrs.id, 'mermaid-preview'),
-        source: typeof node.attrs.source === 'string' ? node.attrs.source : '',
-        ...(typeof node.attrs.caption === 'string' && { caption: node.attrs.caption }),
+        id: resolveNodeBlockId(node.attrs.id, "mermaid-preview"),
+        source: typeof node.attrs.source === "string" ? node.attrs.source : "",
+        ...(typeof node.attrs.caption === "string" && {
+          caption: node.attrs.caption,
+        }),
       }),
     [node.attrs.caption, node.attrs.id, node.attrs.source],
   );
@@ -118,19 +105,15 @@ function MermaidPreviewNodeView({ node }: NodeViewProps): JSX.Element {
   );
 }
 
-function ExcalidrawPreviewNodeView({ node }: NodeViewProps): JSX.Element {
-  const id = resolveNodeBlockId(node.attrs.id, 'excalidraw-preview');
+function MoonlightPreviewNodeView({ node }: NodeViewProps): JSX.Element {
+  const id = resolveNodeBlockId(node.attrs.id, "moonlight-preview");
   const data = isRecord(node.attrs.data) ? node.attrs.data : {};
-  const block = useMemo<ExcalidrawBlock>(
+  const block = useMemo<MoonlightBlock>(
     () =>
-      excalidrawBlock({
+      moonlightBlock({
         id,
-        elements: Array.isArray(data.elements)
-          ? (data.elements as ExcalidrawBlock[1]['elements'])
-          : [],
-        ...(isRecord(data.app_state) && { app_state: data.app_state }),
-        ...(isRecord(data.files) && { files: data.files }),
-        ...(typeof data.caption === 'string' && { caption: data.caption }),
+        svg: typeof data.svg === "string" ? data.svg : "",
+        ...(typeof data.caption === "string" && { caption: data.caption }),
       }),
     [data, id],
   );
@@ -138,7 +121,7 @@ function ExcalidrawPreviewNodeView({ node }: NodeViewProps): JSX.Element {
   return (
     <EmbeddedPreviewNodeView
       block={block}
-      type="excalidraw"
+      type="moonlight"
       label={describePreviewNode(block)}
       serializedData={JSON.stringify(block[1])}
     />
@@ -168,10 +151,16 @@ function EmbeddedPreviewNodeView({
     if (!container) return;
     let canceled = false;
     setPreviewError(null);
-    void renderDocumentPreview(container, previewDoc).catch((error: unknown) => {
-      if (canceled) return;
-      setPreviewError(error instanceof Error ? error.message : 'Preview の描画に失敗しました');
-    });
+    void renderDocumentPreview(container, previewDoc).catch(
+      (error: unknown) => {
+        if (canceled) return;
+        setPreviewError(
+          error instanceof Error
+            ? error.message
+            : "Preview の描画に失敗しました",
+        );
+      },
+    );
     return () => {
       canceled = true;
     };
@@ -193,7 +182,9 @@ function EmbeddedPreviewNodeView({
         <strong>{label}</strong>
       </div>
       {previewError ? (
-        <div className="editor-workspace__inline-embedded-error">{previewError}</div>
+        <div className="editor-workspace__inline-embedded-error">
+          {previewError}
+        </div>
       ) : (
         <div
           ref={previewRef}
@@ -206,9 +197,9 @@ function EmbeddedPreviewNodeView({
   );
 }
 
-const FALLBACK_DOCUMENT_ID = 'papyr-editor-workspace';
+const FALLBACK_DOCUMENT_ID = "papyr-editor-workspace";
 const PARSE_DEBOUNCE_MS = 100;
-const STATIC_EDITOR_MODE: EditorMode = 'rich';
+const STATIC_EDITOR_MODE: EditorMode = "rich";
 const DOUBLE_TAP_INTERVAL_MS = 360;
 const editorUiPapyrExtensions = [
   PapyrListItemExtension,
@@ -217,9 +208,9 @@ const editorUiPapyrExtensions = [
       return ReactNodeViewRenderer(TablePreviewNodeView);
     },
   }),
-  ExcalidrawBlockExtension.extend({
+  MoonlightBlockExtension.extend({
     addNodeView() {
-      return ReactNodeViewRenderer(ExcalidrawPreviewNodeView);
+      return ReactNodeViewRenderer(MoonlightPreviewNodeView);
     },
   }),
   MermaidBlockExtension.extend({
@@ -229,7 +220,7 @@ const editorUiPapyrExtensions = [
   }),
 ];
 
-export type EditorMode = 'markdown' | 'rich';
+export type EditorMode = "markdown" | "rich";
 
 export interface EditorWorkspaceProps {
   source: string;
@@ -269,15 +260,21 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
-  const [parsedDoc, setParsedDoc] = useState<PapyrDocument | null>(initialParse.doc);
-  const [parseError, setParseError] = useState<string | null>(initialParse.error);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(initialSelectedDiagramId);
+  const [parsedDoc, setParsedDoc] = useState<PapyrDocument | null>(
+    initialParse.doc,
+  );
+  const [parseError, setParseError] = useState<string | null>(
+    initialParse.error,
+  );
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
+    initialSelectedDiagramId,
+  );
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
 
   const docRef = useRef<PapyrDocument | null>(initialParse.doc);
   const skipNextSourceParseRef = useRef<string | null>(source);
   const [useNativeTextareaFallback] = useState(() =>
-    typeof navigator !== 'undefined'
+    typeof navigator !== "undefined"
       ? shouldUseNativeTextareaFallback({
           userAgent: navigator.userAgent,
           platform: navigator.platform,
@@ -320,7 +317,8 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
     [parsedDoc],
   );
   const selectedBlock = useMemo(
-    () => previewBlocks.find((block) => embeddedBlockId(block) === selectedBlockId),
+    () =>
+      previewBlocks.find((block) => embeddedBlockId(block) === selectedBlockId),
     [previewBlocks, selectedBlockId],
   );
 
@@ -330,7 +328,10 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
       setIsBlockModalOpen(false);
       return;
     }
-    if (!selectedBlockId || !embeddedBlockEntries.some((entry) => entry.id === selectedBlockId)) {
+    if (
+      !selectedBlockId ||
+      !embeddedBlockEntries.some((entry) => entry.id === selectedBlockId)
+    ) {
       setSelectedBlockId(embeddedBlockEntries[0]?.id ?? null);
     }
   }, [embeddedBlockEntries, selectedBlockId]);
@@ -375,9 +376,9 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
     setIsBlockModalOpen(true);
   };
 
-  const addExcalidraw = () => {
+  const addMoonlight = () => {
     if (!parsedDoc) return;
-    const block = createDefaultExcalidrawBlock();
+    const block = createDefaultMoonlightBlock();
     applyDocument(appendBlock(parsedDoc, block), embeddedBlockId(block));
     setIsBlockModalOpen(true);
   };
@@ -387,18 +388,20 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
     if (!current || !isEditableMermaidBlock(selectedBlock)) return;
     const selectedId = embeddedBlockId(selectedBlock);
     const nextDoc = updateEmbeddedBlock(current, selectedId, (block) =>
-      isEditableMermaidBlock(block) ? mermaidBlock({ ...block[1], ...patch }) : block,
+      isEditableMermaidBlock(block)
+        ? mermaidBlock({ ...block[1], ...patch })
+        : block,
     );
     applyDocument(nextDoc, selectedId);
   };
 
-  const updateExcalidrawCaption = (caption: string | undefined) => {
+  const updateMoonlightCaption = (caption: string | undefined) => {
     const current = docRef.current;
-    if (!current || !isEditableExcalidrawBlock(selectedBlock)) return;
+    if (!current || !isEditableMoonlightBlock(selectedBlock)) return;
     const selectedId = embeddedBlockId(selectedBlock);
     const nextDoc = updateEmbeddedBlock(current, selectedId, (block) =>
-      isEditableExcalidrawBlock(block)
-        ? excalidrawBlock({ ...block[1], caption: caption ?? undefined })
+      isEditableMoonlightBlock(block)
+        ? moonlightBlock({ ...block[1], caption: caption ?? undefined })
         : block,
     );
     applyDocument(nextDoc, selectedId);
@@ -452,10 +455,15 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
           ...block[1],
           rows: block[1].rows.map((row, index) =>
             index === rowIndex
-              ? Array.from({ length: block[1].columns.length }, (_, currentColumnIndex) => {
-                  const cell = row[currentColumnIndex] ?? { text: '' };
-                  return currentColumnIndex === columnIndex ? { ...cell, text } : cell;
-                })
+              ? Array.from(
+                  { length: block[1].columns.length },
+                  (_, currentColumnIndex) => {
+                    const cell = row[currentColumnIndex] ?? { text: "" };
+                    return currentColumnIndex === columnIndex
+                      ? { ...cell, text }
+                      : cell;
+                  },
+                )
               : row,
           ),
         }),
@@ -471,11 +479,11 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
         columns: normalizeEditableTableColumns([
           ...block[1].columns,
           {
-            key: '',
+            key: "",
             header: `Column ${block[1].columns.length + 1}`,
           },
         ]),
-        rows: block[1].rows.map((row) => [...row, { text: '' }]),
+        rows: block[1].rows.map((row) => [...row, { text: "" }]),
       }),
     );
   }, [updateTable]);
@@ -489,7 +497,9 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
           columns: normalizeEditableTableColumns(
             block[1].columns.filter((_, index) => index !== columnIndex),
           ),
-          rows: block[1].rows.map((row) => row.filter((_, index) => index !== columnIndex)),
+          rows: block[1].rows.map((row) =>
+            row.filter((_, index) => index !== columnIndex),
+          ),
         });
       });
     },
@@ -517,59 +527,43 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
     [updateTable],
   );
 
-  const selectedExcalidrawId = isEditableExcalidrawBlock(selectedBlock)
+  const selectedMoonlightId = isEditableMoonlightBlock(selectedBlock)
     ? embeddedBlockId(selectedBlock)
     : null;
 
-  const excalidrawInitialData = useMemo<ExcalidrawInitialDataState | undefined>(() => {
-    if (!selectedExcalidrawId || !parsedDoc) return undefined;
-    const block = findEmbeddedBlock(parsedDoc, selectedExcalidrawId);
-    if (!isEditableExcalidrawBlock(block)) return undefined;
-    return toExcalidrawInitialData(block);
-  }, [parsedDoc, selectedExcalidrawId]);
-
-  const handleExcalidrawChange = useCallback(
-    (elements: readonly unknown[], appState: unknown, files: unknown) => {
-      const id = selectedExcalidrawId;
+  const updateMoonlightSvg = useCallback(
+    (svg: string) => {
+      const id = selectedMoonlightId;
       const current = docRef.current;
       if (!id || !current) return;
-      const block = findEmbeddedBlock(current, id);
-      if (!isEditableExcalidrawBlock(block)) return;
-      const nextElements = toPlainRecordArray(elements);
-      const nextAppState = sanitizeExcalidrawAppState(appState);
-      const nextFiles = toPlainRecord(files);
-      if (
-        recordArrayEqual(block[1].elements as Array<Record<string, unknown>>, nextElements) &&
-        recordEqual(block[1].app_state, nextAppState) &&
-        recordEqual(block[1].files, nextFiles)
-      ) {
-        return;
-      }
       const nextDoc = updateEmbeddedBlock(current, id, (candidate) =>
-        isEditableExcalidrawBlock(candidate)
-          ? excalidrawBlock({
+        isEditableMoonlightBlock(candidate)
+          ? moonlightBlock({
               ...candidate[1],
-              elements: nextElements,
-              app_state: nextAppState,
-              files: nextFiles,
+              svg,
             })
           : candidate,
       );
       applyDocument(nextDoc, id);
     },
-    [applyDocument, selectedExcalidrawId],
+    [applyDocument, selectedMoonlightId],
   );
 
-  const blockActionsDisabled = readOnly || parsedDoc === null || parseError !== null;
+  const blockActionsDisabled =
+    readOnly || parsedDoc === null || parseError !== null;
   const blockCount = parsedDoc?.blocks.length ?? 0;
 
   return (
     <div className="editor-workspace" data-editor-mode={STATIC_EDITOR_MODE}>
       <header className="editor-workspace__topbar">
         <div>
-          {eyebrow ? <p className="editor-workspace__eyebrow">{eyebrow}</p> : null}
+          {eyebrow ? (
+            <p className="editor-workspace__eyebrow">{eyebrow}</p>
+          ) : null}
           {title ? <h1 className="editor-workspace__title">{title}</h1> : null}
-          {subtitle ? <p className="editor-workspace__subtitle">{subtitle}</p> : null}
+          {subtitle ? (
+            <p className="editor-workspace__subtitle">{subtitle}</p>
+          ) : null}
         </div>
         <div className="editor-workspace__actions">
           <button
@@ -583,10 +577,10 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
           <button
             type="button"
             className="editor-workspace__action"
-            onClick={addExcalidraw}
+            onClick={addMoonlight}
             disabled={blockActionsDisabled}
           >
-            Add Excalidraw
+            Add Moonlight
           </button>
         </div>
       </header>
@@ -594,15 +588,18 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
       {banner}
 
       <div className="editor-workspace__summary-strip">
-        <span>Visual blocks edit the PapyrDocument while Markdown stays the public API.</span>
+        <span>
+          Visual blocks edit the PapyrDocument while Markdown stays the public
+          API.
+        </span>
         <span>{blockCount} blocks</span>
         <span>{embeddedBlockEntries.length} embedded blocks</span>
       </div>
 
       {parseError ? (
         <div className="editor-workspace__banner editor-workspace__banner--error">
-          Markdown を PapyrDocument に変換できません。embedded preview と block editor
-          は一時停止しています: {parseError}
+          Markdown を PapyrDocument に変換できません。embedded preview と block
+          editor は一時停止しています: {parseError}
         </div>
       ) : null}
 
@@ -611,7 +608,10 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
           <div className="editor-workspace__panel-header">
             <div className="editor-workspace__panel-heading">
               <h2>Integrated editor</h2>
-              <span>TipTap edits structured blocks and serializes changes back to Markdown.</span>
+              <span>
+                TipTap edits structured blocks and serializes changes back to
+                Markdown.
+              </span>
             </div>
           </div>
 
@@ -635,8 +635,8 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
 
           <div className="editor-workspace__editor-footer">
             <span>
-              Embedded blocks remain atomic and open focused editors with double-click, double-tap,
-              or the toolbar action.
+              Embedded blocks remain atomic and open focused editors with
+              double-click, double-tap, or the toolbar action.
             </span>
           </div>
         </section>
@@ -654,9 +654,8 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
         onRemoveTableColumn={removeTableColumn}
         onAddTableRow={addTableRow}
         onRemoveTableRow={removeTableRow}
-        onUpdateExcalidrawCaption={updateExcalidrawCaption}
-        excalidrawInitialData={excalidrawInitialData}
-        onExcalidrawChange={handleExcalidrawChange}
+        onUpdateMoonlightCaption={updateMoonlightCaption}
+        onUpdateMoonlightSvg={updateMoonlightSvg}
       />
     </div>
   );
@@ -675,7 +674,10 @@ function RichProseMirrorEditor({
   documentId: string;
   selectedBlockId: string | null;
   readOnly: boolean;
-  onDocumentChange: (nextDoc: PapyrDocument, nextSelectionId?: string | null) => void;
+  onDocumentChange: (
+    nextDoc: PapyrDocument,
+    nextSelectionId?: string | null,
+  ) => void;
   onSelectEmbeddedBlock: (blockId: string) => void;
   onOpenEmbeddedBlock: (blockId: string) => void;
 }) {
@@ -693,14 +695,14 @@ function RichProseMirrorEditor({
     editable: !readOnly,
     editorProps: {
       attributes: {
-        class: 'editor-workspace__prosemirror',
-        'aria-label': 'Papyr visual block editor',
+        class: "editor-workspace__prosemirror",
+        "aria-label": "Papyr visual block editor",
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
       const pm = currentEditor.getJSON() as ProseMirrorNode;
       const converted = proseMirrorToDocument(pm, documentId, {
-        generateId: () => createBlockId('block'),
+        generateId: () => createBlockId("block"),
       });
       const base = lastExternalDocRef.current;
       onDocumentChange({
@@ -715,7 +717,8 @@ function RichProseMirrorEditor({
     lastExternalDocRef.current = doc;
     if (!editor) return;
     const nextContent = documentToProseMirror(doc);
-    if (JSON.stringify(editor.getJSON()) === JSON.stringify(nextContent)) return;
+    if (JSON.stringify(editor.getJSON()) === JSON.stringify(nextContent))
+      return;
     editor.commands.setContent(nextContent, false);
   }, [doc, editor]);
 
@@ -726,9 +729,12 @@ function RichProseMirrorEditor({
   useEffect(() => {
     if (!editor) return;
     const root = editor.view.dom;
-    const blocks = root.querySelectorAll<HTMLElement>('[data-papyr-block-id]');
+    const blocks = root.querySelectorAll<HTMLElement>("[data-papyr-block-id]");
     for (const block of blocks) {
-      block.classList.toggle('is-active', block.dataset.papyrBlockId === selectedBlockId);
+      block.classList.toggle(
+        "is-active",
+        block.dataset.papyrBlockId === selectedBlockId,
+      );
     }
   }, [editor, selectedBlockId, doc]);
 
@@ -738,14 +744,18 @@ function RichProseMirrorEditor({
 
   const handlePointerUp = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (event.pointerType !== 'touch') return;
+      if (event.pointerType !== "touch") return;
       const blockId = getEditorEmbeddedBlockId(event.target);
       if (!blockId) return;
       onSelectEmbeddedBlock(blockId);
       if (readOnly) return;
       const now = Date.now();
       const lastTap = lastTouchTapRef.current;
-      if (lastTap && lastTap.id === blockId && now - lastTap.time <= DOUBLE_TAP_INTERVAL_MS) {
+      if (
+        lastTap &&
+        lastTap.id === blockId &&
+        now - lastTap.time <= DOUBLE_TAP_INTERVAL_MS
+      ) {
         onOpenEmbeddedBlock(blockId);
         lastTouchTapRef.current = null;
         return;
@@ -757,10 +767,14 @@ function RichProseMirrorEditor({
 
   return (
     <>
-      <div className="editor-workspace__toolbar" role="toolbar" aria-label="Block editor toolbar">
+      <div
+        className="editor-workspace__toolbar"
+        role="toolbar"
+        aria-label="Block editor toolbar"
+      >
         <ToolbarButton
           label="Paragraph"
-          active={editor?.isActive('paragraph') ?? false}
+          active={editor?.isActive("paragraph") ?? false}
           disabled={readOnly || !editor}
           onClick={() => {
             editor?.chain().focus().setParagraph().run();
@@ -768,37 +782,41 @@ function RichProseMirrorEditor({
         />
         <ToolbarButton
           label="H1"
-          active={editor?.isActive('heading', { level: 1 }) ?? false}
+          active={editor?.isActive("heading", { level: 1 }) ?? false}
           disabled={readOnly || !editor}
-          onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
+          onClick={() =>
+            editor?.chain().focus().toggleHeading({ level: 1 }).run()
+          }
         />
         <ToolbarButton
           label="H2"
-          active={editor?.isActive('heading', { level: 2 }) ?? false}
+          active={editor?.isActive("heading", { level: 2 }) ?? false}
           disabled={readOnly || !editor}
-          onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+          onClick={() =>
+            editor?.chain().focus().toggleHeading({ level: 2 }).run()
+          }
         />
         <ToolbarButton
           label="Bold"
-          active={editor?.isActive('bold') ?? false}
+          active={editor?.isActive("bold") ?? false}
           disabled={readOnly || !editor}
           onClick={() => editor?.chain().focus().toggleBold().run()}
         />
         <ToolbarButton
           label="Italic"
-          active={editor?.isActive('italic') ?? false}
+          active={editor?.isActive("italic") ?? false}
           disabled={readOnly || !editor}
           onClick={() => editor?.chain().focus().toggleItalic().run()}
         />
         <ToolbarButton
           label="Strike"
-          active={editor?.isActive('strike') ?? false}
+          active={editor?.isActive("strike") ?? false}
           disabled={readOnly || !editor}
           onClick={() => editor?.chain().focus().toggleStrike().run()}
         />
         <ToolbarButton
           label="Code block"
-          active={editor?.isActive('codeBlock') ?? false}
+          active={editor?.isActive("codeBlock") ?? false}
           disabled={readOnly || !editor}
           onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
         />
@@ -866,9 +884,8 @@ function BlockEditorModal({
   onRemoveTableColumn,
   onAddTableRow,
   onRemoveTableRow,
-  onUpdateExcalidrawCaption,
-  excalidrawInitialData,
-  onExcalidrawChange,
+  onUpdateMoonlightCaption,
+  onUpdateMoonlightSvg,
 }: {
   open: boolean;
   block: EmbeddedBlock | undefined;
@@ -876,25 +893,36 @@ function BlockEditorModal({
   onUpdateMermaid: (patch: Partial<MermaidBlock[1]>) => void;
   onUpdateTableCaption: (caption: string | undefined) => void;
   onUpdateTableHeader: (columnIndex: number, header: string) => void;
-  onUpdateTableCell: (rowIndex: number, columnIndex: number, text: string) => void;
+  onUpdateTableCell: (
+    rowIndex: number,
+    columnIndex: number,
+    text: string,
+  ) => void;
   onAddTableColumn: () => void;
   onRemoveTableColumn: (columnIndex: number) => void;
   onAddTableRow: () => void;
   onRemoveTableRow: (rowIndex: number) => void;
-  onUpdateExcalidrawCaption: (caption: string | undefined) => void;
-  excalidrawInitialData: ExcalidrawInitialDataState | undefined;
-  onExcalidrawChange: (elements: readonly unknown[], appState: unknown, files: unknown) => void;
+  onUpdateMoonlightCaption: (caption: string | undefined) => void;
+  onUpdateMoonlightSvg: (svg: string) => void;
 }) {
   const mermaidPreviewRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const initialFocusRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement | null>(
+  const initialFocusRef = useRef<
+    HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement | null
+  >(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const [mermaidPreviewError, setMermaidPreviewError] = useState<string | null>(
     null,
   );
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-  const [mermaidPreviewError, setMermaidPreviewError] = useState<string | null>(null);
 
   const setInitialFocusTarget = useCallback(
-    (element: HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement | null) => {
+    (
+      element:
+        | HTMLInputElement
+        | HTMLTextAreaElement
+        | HTMLButtonElement
+        | null,
+    ) => {
       initialFocusRef.current = element;
     },
     [],
@@ -906,13 +934,20 @@ function BlockEditorModal({
     if (!container) return;
     let canceled = false;
     setMermaidPreviewError(null);
-    const previewDoc: PapyrDocument = { id: `preview-${embeddedBlockId(block)}`, blocks: [block] };
-    void renderDocumentPreview(container, previewDoc).catch((error: unknown) => {
-      if (canceled) return;
-      setMermaidPreviewError(
-        error instanceof Error ? error.message : 'Mermaid preview の描画に失敗しました',
-      );
-    });
+    const previewDoc: PapyrDocument = {
+      id: `preview-${embeddedBlockId(block)}`,
+      blocks: [block],
+    };
+    void renderDocumentPreview(container, previewDoc).catch(
+      (error: unknown) => {
+        if (canceled) return;
+        setMermaidPreviewError(
+          error instanceof Error
+            ? error.message
+            : "Mermaid preview の描画に失敗しました",
+        );
+      },
+    );
     return () => {
       canceled = true;
     };
@@ -925,19 +960,23 @@ function BlockEditorModal({
       return;
     }
     previousFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const raf = window.requestAnimationFrame(() => initialFocusRef.current?.focus());
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const raf = window.requestAnimationFrame(() =>
+      initialFocusRef.current?.focus(),
+    );
     return () => window.cancelAnimationFrame(raf);
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         onClose();
         return;
       }
-      if (event.key !== 'Tab') return;
+      if (event.key !== "Tab") return;
       const modal = modalRef.current;
       if (!modal) return;
       const focusable = getFocusableElements(modal);
@@ -945,7 +984,9 @@ function BlockEditorModal({
       const first = focusable[0]!;
       const last = focusable[focusable.length - 1]!;
       const activeElement =
-        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
 
       if (!activeElement || !modal.contains(activeElement)) {
         event.preventDefault();
@@ -961,8 +1002,8 @@ function BlockEditorModal({
         first.focus();
       }
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose, open]);
 
   if (!open || !block) return null;
@@ -990,7 +1031,6 @@ function BlockEditorModal({
             <h2>{blockEditorTitle}</h2>
           </div>
           <button
-            ref={isEditableExcalidrawBlock(block) ? setInitialFocusTarget : undefined}
             type="button"
             className="editor-workspace__modal-close"
             aria-label="Close block editor"
@@ -1007,7 +1047,7 @@ function BlockEditorModal({
               <input
                 ref={setInitialFocusTarget}
                 type="text"
-                value={block[1].caption ?? ''}
+                value={block[1].caption ?? ""}
                 onChange={(event) =>
                   onUpdateMermaid({
                     caption: event.target.value || undefined,
@@ -1039,7 +1079,10 @@ function BlockEditorModal({
                     {mermaidPreviewError}
                   </div>
                 ) : null}
-                <div ref={mermaidPreviewRef} className="editor-workspace__modal-preview-body" />
+                <div
+                  ref={mermaidPreviewRef}
+                  className="editor-workspace__modal-preview-body"
+                />
               </section>
             </div>
           </div>
@@ -1050,8 +1093,10 @@ function BlockEditorModal({
               <input
                 ref={setInitialFocusTarget}
                 type="text"
-                value={block[1].caption ?? ''}
-                onChange={(event) => onUpdateTableCaption(event.target.value || undefined)}
+                value={block[1].caption ?? ""}
+                onChange={(event) =>
+                  onUpdateTableCaption(event.target.value || undefined)
+                }
               />
             </label>
             <div className="editor-workspace__modal-table">
@@ -1077,7 +1122,9 @@ function BlockEditorModal({
                         <input
                           type="text"
                           value={column.header}
-                          onChange={(event) => onUpdateTableHeader(columnIndex, event.target.value)}
+                          onChange={(event) =>
+                            onUpdateTableHeader(columnIndex, event.target.value)
+                          }
                         />
                       </label>
                       <button
@@ -1121,12 +1168,18 @@ function BlockEditorModal({
                               key={`${embeddedBlockId(block)}-row-${rowIndex}-cell-${columnIndex}`}
                               className="editor-workspace__modal-field"
                             >
-                              <span>{column.header || `Column ${columnIndex + 1}`}</span>
+                              <span>
+                                {column.header || `Column ${columnIndex + 1}`}
+                              </span>
                               <input
                                 type="text"
-                                value={row[columnIndex]?.text ?? ''}
+                                value={row[columnIndex]?.text ?? ""}
                                 onChange={(event) =>
-                                  onUpdateTableCell(rowIndex, columnIndex, event.target.value)
+                                  onUpdateTableCell(
+                                    rowIndex,
+                                    columnIndex,
+                                    event.target.value,
+                                  )
                                 }
                               />
                             </label>
@@ -1153,33 +1206,77 @@ function BlockEditorModal({
               <input
                 ref={setInitialFocusTarget}
                 type="text"
-                value={block[1].caption ?? ''}
-                onChange={(event) => onUpdateExcalidrawCaption(event.target.value || undefined)}
+                value={block[1].caption ?? ""}
+                onChange={(event) =>
+                  onUpdateMoonlightCaption(event.target.value || undefined)
+                }
               />
             </label>
-            <div className="editor-workspace__excalidraw editor-workspace__excalidraw--modal">
-              <ExcalidrawErrorBoundary>
-                <React.Suspense fallback={<div className="editor-workspace__excalidraw-loading" />}>
-                  <ExcalidrawLazy
-                    key={embeddedBlockId(block)}
-                    initialData={excalidrawInitialData}
-                    onChange={onExcalidrawChange}
-                    UIOptions={{
-                      canvasActions: {
-                        loadScene: false,
-                        saveAsImage: true,
-                        export: false,
-                        toggleTheme: false,
-                      },
-                    }}
-                  />
-                </React.Suspense>
-              </ExcalidrawErrorBoundary>
+            <div className="editor-workspace__moonlight editor-workspace__moonlight--modal">
+              <MoonlightEditor
+                key={embeddedBlockId(block)}
+                svg={block[1].svg}
+                onChange={onUpdateMoonlightSvg}
+              />
             </div>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function MoonlightEditor({
+  svg,
+  onChange,
+}: {
+  svg: string;
+  onChange: (svg: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<EditorHandle | null>(null);
+  const lastEmittedSvgRef = useRef(svg);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const editor = createEditor(container, {
+      width: Math.max(container.clientWidth, 720),
+      height: 560,
+      initialSvg: svg,
+    });
+    editorRef.current = editor;
+    lastEmittedSvgRef.current = svg;
+
+    const maybeUnsubscribe = editor.onChange(() => {
+      const nextSvg = editor.exportSvg();
+      if (nextSvg === lastEmittedSvgRef.current) return;
+      lastEmittedSvgRef.current = nextSvg;
+      onChangeRef.current(nextSvg);
+    }) as unknown;
+
+    return () => {
+      if (typeof maybeUnsubscribe === "function") maybeUnsubscribe();
+      editor.destroy();
+      editorRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || svg === lastEmittedSvgRef.current) return;
+    editor.importSvg(svg);
+    lastEmittedSvgRef.current = svg;
+  }, [svg]);
+
+  return (
+    <div ref={containerRef} className="editor-workspace__moonlight-host" />
   );
 }
 
@@ -1198,7 +1295,9 @@ function ToolbarButton({
     <button
       type="button"
       className={
-        active ? 'editor-workspace__toolbar-button is-active' : 'editor-workspace__toolbar-button'
+        active
+          ? "editor-workspace__toolbar-button is-active"
+          : "editor-workspace__toolbar-button"
       }
       aria-pressed={active}
       disabled={disabled}
@@ -1218,14 +1317,17 @@ function parseSource(
     return {
       doc: parseMarkdown(source, {
         documentId,
-        generateId: () => createBlockId('block'),
+        generateId: () => createBlockId("block"),
       }),
       error: null,
     };
   } catch (error) {
     return {
       doc: null,
-      error: error instanceof Error ? error.message : 'Markdown の解析に失敗しました',
+      error:
+        error instanceof Error
+          ? error.message
+          : "Markdown の解析に失敗しました",
     };
   }
 }
@@ -1235,53 +1337,49 @@ function getFocusableElements(root: HTMLElement): HTMLElement[] {
     root.querySelectorAll<HTMLElement>(
       'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
     ),
-  ).filter((element) => !element.hasAttribute('disabled') && element.tabIndex >= 0);
+  ).filter(
+    (element) => !element.hasAttribute("disabled") && element.tabIndex >= 0,
+  );
 }
 
 function getEditorEmbeddedBlockId(target: EventTarget | null): string | null {
   if (!(target instanceof Element)) return null;
-  return target.closest<HTMLElement>('[data-papyr-block-id]')?.dataset.papyrBlockId ?? null;
+  return (
+    target.closest<HTMLElement>("[data-papyr-block-id]")?.dataset
+      .papyrBlockId ?? null
+  );
 }
 
-function createEmptyTableRow(columnCount: number): TableBlock[1]['rows'][number] {
-  return Array.from({ length: columnCount }, () => ({ text: '' }));
-}
-
-function toExcalidrawInitialData(block: ExcalidrawBlock): ExcalidrawInitialDataState {
-  const appState = sanitizeExcalidrawAppState(block[1].app_state);
-  return {
-    elements: cloneJson(block[1].elements) as unknown as ExcalidrawInitialDataState['elements'],
-    ...(appState !== undefined && {
-      appState: {
-        ...cloneJson(appState),
-        collaborators: new Map<string, never>(),
-      } as ExcalidrawInitialDataState['appState'],
-    }),
-    ...(block[1].files !== undefined && {
-      files: cloneJson(block[1].files) as ExcalidrawInitialDataState['files'],
-    }),
-  };
+function createEmptyTableRow(
+  columnCount: number,
+): TableBlock[1]["rows"][number] {
+  return Array.from({ length: columnCount }, () => ({ text: "" }));
 }
 
 function resolveNodeBlockId(value: unknown, fallbackPrefix: string): string {
-  return typeof value === 'string' && value.length > 0 ? value : createBlockId(fallbackPrefix);
+  return typeof value === "string" && value.length > 0
+    ? value
+    : createBlockId(fallbackPrefix);
 }
 
 function describePreviewNode(block: EditableEmbeddedBlock): string {
   switch (block[0]) {
-    case 'Table':
+    case "Table":
       return block[1].caption || `Table (${block[1].columns.length} columns)`;
-    case 'Mermaid': {
+    case "Mermaid": {
       if (block[1].caption) return block[1].caption;
       return (
         block[1].source
-          .split('\n')
+          .split("\n")
           .map((line) => line.trim())
-          .find((line) => line.length > 0) ?? 'Mermaid diagram'
+          .find((line) => line.length > 0) ?? "Mermaid diagram"
       );
     }
-    case 'Excalidraw':
-      return block[1].caption || `Excalidraw (${block[1].elements.length} elements)`;
+    case "Moonlight":
+      return (
+        block[1].caption ||
+        (block[1].svg.trim().length > 0 ? "Moonlight SVG" : "Moonlight diagram")
+      );
     default: {
       const _exhaustive: never = block;
       return _exhaustive;
@@ -1289,38 +1387,6 @@ function describePreviewNode(block: EditableEmbeddedBlock): string {
   }
 }
 
-function toPlainRecordArray(values: readonly unknown[]): Array<Record<string, unknown>> {
-  return values.map((value) => toPlainRecord(value));
-}
-
-function toPlainRecord(value: unknown): Record<string, unknown> {
-  const cloned = cloneJson(value);
-  return isRecord(cloned) ? cloned : {};
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function cloneJson<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function recordArrayEqual(
-  a: ReadonlyArray<Record<string, unknown>> | undefined,
-  b: ReadonlyArray<Record<string, unknown>> | undefined,
-): boolean {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.length !== b.length) return false;
-  for (let index = 0; index < a.length; index++) {
-    if (!recordEqual(a[index], b[index])) return false;
-  }
-  return true;
-}
-
-function recordEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (a === undefined || b === undefined) return a === b;
-  return JSON.stringify(a) === JSON.stringify(b);
+  return typeof value === "object" && value !== null;
 }
