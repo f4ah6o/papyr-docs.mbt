@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { PapyrDocument } from '@f12o/papyr-core';
-import { EditorWorkspace, createSampleDocumentSource } from '@f12o/papyr-editor-ui';
-import '@f12o/papyr-editor-ui/styles.css';
-import { parseMarkdown } from '@f12o/papyr-markdown';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { PapyrDocument } from "@f12o/papyr-core";
+import {
+  EditorWorkspace,
+  createSampleDocumentSource,
+} from "@f12o/papyr-editor-ui";
+import "@f12o/papyr-editor-ui/styles.css";
+import { parseMarkdown } from "@f12o/papyr-markdown";
 import {
   mountPapyrDocumentViewer,
   mountPapyrSlideViewer,
   type MountedPapyrView,
-} from '@f12o/papyr-preview';
+} from "@f12o/papyr-preview";
 
-const DESIGN_DOCUMENT_ID = 'papyr-design-system-sample';
+const DESIGN_DOCUMENT_ID = "papyr-design-system-sample";
 
 export function DesignSystemApp() {
   const [source, setSource] = useState(() => createSampleDocumentSource());
@@ -17,10 +20,15 @@ export function DesignSystemApp() {
 
   return (
     <div className="design-system-page">
-      <section className="design-system-hero" aria-labelledby="design-system-title">
+      <section
+        className="design-system-hero"
+        aria-labelledby="design-system-title"
+      >
         <div className="design-system-hero__topbar" role="presentation">
           <span className="design-system-tag">ds-001</span>
-          <span className="design-system-hero__path">papyr / docs / design-system</span>
+          <span className="design-system-hero__path">
+            papyr / docs / design-system
+          </span>
           <span className="design-system-hero__spacer" aria-hidden="true" />
           <Status tone="ok" label="operational" />
           <Status tone="info" label="single source" />
@@ -30,11 +38,14 @@ export function DesignSystemApp() {
             <p className="eyebrow">design system</p>
             <h1 id="design-system-title">Papyr all-in-one authoring surface</h1>
             <p>
-              テキスト、Excalidraw、viewer、slide viewer を同じ document source から確認するための
-              `apps/docs` 向け簡易デザインシステムです。
+              テキスト、Moonlight、viewer、slide viewer を同じ document source
+              から確認するための `apps/docs` 向け簡易デザインシステムです。
             </p>
           </div>
-          <div className="design-system-hero__metrics" aria-label="Design system overview">
+          <div
+            className="design-system-hero__metrics"
+            aria-label="Design system overview"
+          >
             <Metric label="surfaces" value="3" trend="stable" />
             <Metric label="patterns" value="3" trend="up" />
             <Metric label="source" value="1" trend="locked" />
@@ -52,7 +63,11 @@ export function DesignSystemApp() {
         {parsed.error ? (
           <div className="banner banner--error">{parsed.error}</div>
         ) : (
-          <SurfaceShowcase source={source} onSourceChange={setSource} document={parsed.document} />
+          <SurfaceShowcase
+            source={source}
+            onSourceChange={setSource}
+            document={parsed.document}
+          />
         )}
       </SectionShell>
 
@@ -80,7 +95,10 @@ export function DesignSystemApp() {
         </div>
       </SectionShell>
 
-      <footer className="design-system-statusbar" aria-label="design system status">
+      <footer
+        className="design-system-statusbar"
+        aria-label="design system status"
+      >
         <span className="design-system-statusbar__group">
           <Status tone="ok" label="ready" />
           <span>3 surfaces</span>
@@ -116,7 +134,9 @@ function SectionShell({
     <section className="design-system-section" aria-labelledby={id}>
       <div className="design-system-section__header">
         <div className="design-system-section__heading">
-          <span className="design-system-tag design-system-tag--accent">{code}</span>
+          <span className="design-system-tag design-system-tag--accent">
+            {code}
+          </span>
           <div>
             <p className="eyebrow">{eyebrow}</p>
             <h2 id={id}>{title}</h2>
@@ -203,7 +223,11 @@ function SurfaceShowcase({
         {viewerError ? (
           <div className="banner banner--error">{viewerError}</div>
         ) : (
-          <div ref={viewerRef} className="design-system-preview" data-design-system-viewer />
+          <div
+            ref={viewerRef}
+            className="design-system-preview"
+            data-design-system-viewer
+          />
         )}
       </section>
 
@@ -277,7 +301,7 @@ function ComponentInventory() {
         <KitHeader eyebrow="fields" hint="search" />
         <label className="design-system-field">
           <span>Search scope</span>
-          <input type="search" defaultValue="excalidraw diagram" />
+          <input type="search" defaultValue="moonlight diagram" />
         </label>
       </div>
       <div className="design-system-kit-card">
@@ -292,7 +316,10 @@ function ComponentInventory() {
       <article className="design-system-kit-card design-system-doc-card">
         <KitHeader eyebrow="document card" hint="summary" />
         <h3>Architecture note</h3>
-        <p>本文、図、発表用スライドを同じ PapyrDocument から生成するサンプルカード。</p>
+        <p>
+          本文、図、発表用スライドを同じ PapyrDocument
+          から生成するサンプルカード。
+        </p>
         <div className="meta-row">
           <span>updated today</span>
           <span>6 blocks</span>
@@ -317,11 +344,17 @@ function ReferencePattern() {
       <header className="design-system-pattern__bar">
         <span className="design-system-tag design-system-tag--accent">P1</span>
         <span className="eyebrow">reference</span>
-        <span className="design-system-pattern__bar-spacer" aria-hidden="true" />
+        <span
+          className="design-system-pattern__bar-spacer"
+          aria-hidden="true"
+        />
         <Status tone="info" label="two-column" />
       </header>
       <div className="design-system-pattern__grid">
-        <aside className="design-system-pattern__rail" aria-label="Reference table of contents">
+        <aside
+          className="design-system-pattern__rail"
+          aria-label="Reference table of contents"
+        >
           <p className="eyebrow">toc</p>
           <a href="#reference-intro">Overview</a>
           <a href="#reference-components">Components</a>
@@ -342,8 +375,8 @@ function ReferencePattern() {
           </div>
           <h3 id="reference-intro">Reference two-column pattern</h3>
           <p>
-            目次を左に固定し、本文と検索を右に置く読み物向け layout。長い API docs
-            や設計資料でも、現在位置と探索導線を失いにくくします。
+            目次を左に固定し、本文と検索を右に置く読み物向け layout。長い API
+            docs や設計資料でも、現在位置と探索導線を失いにくくします。
           </p>
           <div className="design-system-callout">
             Breadcrumb、TOC、scoped search、本文を1画面に集約。
@@ -363,20 +396,23 @@ function ApiReferencePattern() {
       <header className="design-system-pattern__bar">
         <span className="design-system-tag design-system-tag--accent">P2</span>
         <span className="eyebrow">api</span>
-        <span className="design-system-pattern__bar-spacer" aria-hidden="true" />
+        <span
+          className="design-system-pattern__bar-spacer"
+          aria-hidden="true"
+        />
         <Status tone="ok" label="stable" />
       </header>
       <div className="design-system-pattern__grid design-system-pattern__grid--api">
         <div className="design-system-api-list">
           {[
-            { name: 'EditorWorkspace', kind: 'component' },
-            { name: 'mountPapyrDocumentViewer', kind: 'function' },
-            { name: 'mountPapyrSlideViewer', kind: 'function' },
+            { name: "EditorWorkspace", kind: "component" },
+            { name: "mountPapyrDocumentViewer", kind: "function" },
+            { name: "mountPapyrSlideViewer", kind: "function" },
           ].map((item, index) => (
             <button
               key={item.name}
               type="button"
-              className={`design-system-api-row${index === 0 ? ' is-active' : ''}`}
+              className={`design-system-api-row${index === 0 ? " is-active" : ""}`}
             >
               <span className="design-system-api-row__kind">{item.kind}</span>
               <span className="design-system-api-row__name">{item.name}</span>
@@ -389,7 +425,9 @@ function ApiReferencePattern() {
             <h3 id="api-pattern-title">API reference/detail pattern</h3>
             <span className="design-system-tag">v1</span>
           </div>
-          <p>左で symbol を選び、右で用途・props・短い usage を読む構成です。</p>
+          <p>
+            左で symbol を選び、右で用途・props・短い usage を読む構成です。
+          </p>
           <pre>
             <code>{`mountPapyrDocumentViewer(node, {
   document,
@@ -411,12 +449,19 @@ function DashboardPattern() {
       <header className="design-system-pattern__bar">
         <span className="design-system-tag design-system-tag--accent">P3</span>
         <span className="eyebrow">dashboard</span>
-        <span className="design-system-pattern__bar-spacer" aria-hidden="true" />
+        <span
+          className="design-system-pattern__bar-spacer"
+          aria-hidden="true"
+        />
         <Status tone="info" label="last 24h" />
       </header>
       <div className="design-system-dashboard__header">
         <h3 id="dashboard-pattern-title">Dashboard overview pattern</h3>
-        <input type="search" aria-label="Filter documents" placeholder="Filter documents" />
+        <input
+          type="search"
+          aria-label="Filter documents"
+          placeholder="Filter documents"
+        />
       </div>
       <div className="design-system-dashboard__stats">
         <Metric label="drafts" value="12" trend="up" />
@@ -425,9 +470,9 @@ function DashboardPattern() {
       </div>
       <div className="design-system-dashboard__activity">
         {[
-          { label: 'Updated slide deck', tone: 'ok' as StatusTone },
-          { label: 'Reviewed Excalidraw block', tone: 'info' as StatusTone },
-          { label: 'Published viewer preview', tone: 'warn' as StatusTone },
+          { label: "Updated slide deck", tone: "ok" as StatusTone },
+          { label: "Reviewed Moonlight block", tone: "info" as StatusTone },
+          { label: "Published viewer preview", tone: "warn" as StatusTone },
         ].map((item) => (
           <div key={item.label} className="design-system-activity-row">
             <span className="design-system-activity-row__main">
@@ -445,12 +490,15 @@ function DashboardPattern() {
   );
 }
 
-type StatusTone = 'ok' | 'info' | 'warn';
+type StatusTone = "ok" | "info" | "warn";
 
 function Status({ tone, label }: { tone: StatusTone; label: string }) {
   return (
     <span className={`design-system-status design-system-status--${tone}`}>
-      <span className={`design-system-dot design-system-dot--${tone}`} aria-hidden="true" />
+      <span
+        className={`design-system-dot design-system-dot--${tone}`}
+        aria-hidden="true"
+      />
       {label}
     </span>
   );
@@ -463,11 +511,20 @@ function Metric({
 }: {
   label: string;
   value: string;
-  trend?: 'up' | 'down' | 'stable' | 'locked';
+  trend?: "up" | "down" | "stable" | "locked";
 }) {
-  const glyph = trend === 'up' ? '▲' : trend === 'down' ? '▼' : trend === 'locked' ? '◆' : '◇';
+  const glyph =
+    trend === "up"
+      ? "▲"
+      : trend === "down"
+        ? "▼"
+        : trend === "locked"
+          ? "◆"
+          : "◇";
   return (
-    <div className={`design-system-metric design-system-metric--${trend ?? 'stable'}`}>
+    <div
+      className={`design-system-metric design-system-metric--${trend ?? "stable"}`}
+    >
       <span className="design-system-metric__head">
         <span>{label}</span>
         <span className="design-system-metric__trend" aria-hidden="true">
@@ -481,13 +538,25 @@ function Metric({
 
 function parseDesignDocument(
   source: string,
-): { document: PapyrDocument; error: null } | { document: PapyrDocument; error: string } {
+):
+  | { document: PapyrDocument; error: null }
+  | { document: PapyrDocument; error: string } {
   try {
-    return { document: parseMarkdown(source, { documentId: DESIGN_DOCUMENT_ID }), error: null };
+    return {
+      document: parseMarkdown(source, { documentId: DESIGN_DOCUMENT_ID }),
+      error: null,
+    };
   } catch (error) {
     return {
-      document: { id: DESIGN_DOCUMENT_ID, title: 'Invalid design source', blocks: [] },
-      error: error instanceof Error ? error.message : 'Source の parse に失敗しました。',
+      document: {
+        id: DESIGN_DOCUMENT_ID,
+        title: "Invalid design source",
+        blocks: [],
+      },
+      error:
+        error instanceof Error
+          ? error.message
+          : "Source の parse に失敗しました。",
     };
   }
 }
@@ -500,7 +569,7 @@ function mountPreview(
   let disposed = false;
   let mounted: MountedPapyrView | null = null;
 
-  onError('');
+  onError("");
   void mount()
     .then((view) => {
       if (disposed) {
@@ -511,7 +580,11 @@ function mountPreview(
     })
     .catch((error: unknown) => {
       if (!disposed) {
-        onError(error instanceof Error ? error.message : 'Preview の初期化に失敗しました。');
+        onError(
+          error instanceof Error
+            ? error.message
+            : "Preview の初期化に失敗しました。",
+        );
       }
     });
 

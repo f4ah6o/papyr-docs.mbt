@@ -1,7 +1,7 @@
 {
   "name": "@f12o/papyr-markdown",
   "version": "2026.5.0",
-  "description": "Papyr Markdown 変換（table / excalidraw 向けカスタムフェンス対応）",
+  "description": "Papyr Markdown 変換（table / moonlight 向けカスタムフェンス対応）",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -29,7 +29,8 @@
   },
   "devDependencies": {
     "@f12o/papyr-test-support": "workspace:*",
-    "@types/mdast": "^4.0.0"
+    "@types/mdast": "^4.0.0",
+    "fast-check": "^4.7.0"
   },
   "license": "MIT",
   "author": "f12o",

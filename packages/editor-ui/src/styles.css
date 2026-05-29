@@ -17,7 +17,12 @@
   --ew-surface: color-mix(in srgb, var(--ew-bg) 95%, white 5%);
   --ew-soft: color-mix(in srgb, var(--ew-bg) 92%, white 8%);
   --ew-code-bg: color-mix(in srgb, var(--ew-bg) 84%, black 16%);
-  --ew-editor-font: var(--vscode-editor-font-family, ui-monospace, SFMono-Regular, monospace);
+  --ew-editor-font: var(
+    --vscode-editor-font-family,
+    ui-monospace,
+    SFMono-Regular,
+    monospace
+  );
   --ew-editor-line-height: 1.65;
 
   display: grid;
@@ -209,7 +214,7 @@
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    'Segoe UI',
+    "Segoe UI",
     sans-serif;
   outline: none;
 }
@@ -542,15 +547,21 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
-.editor-workspace__excalidraw {
+.editor-workspace__moonlight {
   min-height: 520px;
   border: 1px solid var(--ew-border);
   border-radius: 18px;
   overflow: hidden;
 }
 
-.editor-workspace__excalidraw--modal {
+.editor-workspace__moonlight--modal {
   min-height: 620px;
+}
+
+.editor-workspace__moonlight-host {
+  min-height: inherit;
+  width: 100%;
+  height: 100%;
 }
 
 .editor-workspace__empty {
@@ -573,7 +584,7 @@
     grid-template-columns: 1fr;
   }
 
-  .editor-workspace__excalidraw--modal {
+  .editor-workspace__moonlight--modal {
     min-height: 420px;
   }
 }

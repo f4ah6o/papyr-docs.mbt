@@ -1,13 +1,13 @@
 import { Node } from '@tiptap/core';
-import type { ExcalidrawBlock } from '@f12o/papyr-core';
+import type { MoonlightBlock } from '@f12o/papyr-core';
 
-export interface ExcalidrawBlockAttrs {
+export interface MoonlightBlockAttrs {
   id: string | null;
-  data: Omit<ExcalidrawBlock, 'type' | 'id'> | null;
+  data: Omit<MoonlightBlock[1], 'id'> | null;
 }
 
-export const ExcalidrawBlockExtension = Node.create({
-  name: 'papyrExcalidraw',
+export const MoonlightBlockExtension = Node.create({
+  name: 'papyrMoonlight',
   group: 'block',
   atom: true,
   draggable: true,
@@ -37,33 +37,30 @@ export const ExcalidrawBlockExtension = Node.create({
   },
 
   parseHTML() {
-    return [{ tag: 'div[data-papyr-block="excalidraw"]' }];
+    return [{ tag: 'div[data-papyr-block="moonlight"]' }];
   },
 
   renderHTML({ HTMLAttributes, node }) {
     return [
       'div',
       {
-        'data-papyr-block': 'excalidraw',
+        'data-papyr-block': 'moonlight',
         ...HTMLAttributes,
-        'data-label': describeExcalidraw(node.attrs.data),
+        'data-label': describeMoonlight(node.attrs.data),
       },
     ];
   },
 });
 
-function describeExcalidraw(value: unknown): string {
-  if (!isObject(value)) return 'Excalidraw scene';
+function describeMoonlight(value: unknown): string {
+  if (!isObject(value)) return 'Moonlight diagram';
 
   const caption = value.caption;
   if (typeof caption === 'string' && caption.trim().length > 0) return caption;
 
-  const elements = value.elements;
-  if (Array.isArray(elements) && elements.length > 0) {
-    return `Excalidraw (${elements.length} elements)`;
-  }
-
-  return 'Excalidraw scene';
+  return typeof value.svg === 'string' && value.svg.trim().length > 0
+    ? 'Moonlight SVG'
+    : 'Moonlight diagram';
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

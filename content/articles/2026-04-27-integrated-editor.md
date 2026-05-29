@@ -1,8 +1,8 @@
 ---
 kind: article
 slug: integrated-editor
-title: '統合エディタで Markdown・preview・diagram を 1 画面に'
-summary: '@f12o/papyr-editor-ui の EditorWorkspace を使うと、Markdown editor、embedded block preview、diagram editor を 1 つの workspace に収められます。'
+title: "統合エディタで Markdown・preview・diagram を 1 画面に"
+summary: "@f12o/papyr-editor-ui の EditorWorkspace を使うと、Markdown editor、embedded block preview、diagram editor を 1 つの workspace に収められます。"
 emoji: ✍️
 published: true
 topics: [editor, react, ui]
@@ -22,9 +22,12 @@ React UI package で、`EditorWorkspace` を提供します。
 ## EditorWorkspace の埋め込み
 
 ```tsx
-import { useState } from 'react';
-import { EditorWorkspace, createSampleDocumentSource } from '@f12o/papyr-editor-ui';
-import '@f12o/papyr-editor-ui/styles.css';
+import { useState } from "react";
+import {
+  EditorWorkspace,
+  createSampleDocumentSource,
+} from "@f12o/papyr-editor-ui";
+import "@f12o/papyr-editor-ui/styles.css";
 
 export function MyEditor(): JSX.Element {
   const [source, setSource] = useState(() => createSampleDocumentSource());
@@ -40,32 +43,36 @@ export function MyEditor(): JSX.Element {
 }
 ```
 
-`createSampleDocumentSource()` は Markdown・table・Mermaid・Excalidraw を含む sample source を返します。空の editor ではなく、Papyr らしい document をすぐ見せたい画面に向いています。
+`createSampleDocumentSource()` は Markdown・table・Mermaid・Moonlight を含む sample source を返します。空の editor ではなく、Papyr らしい document をすぐ見せたい画面に向いています。
 
 ## 保存先へつなぐ
 
 `source` / `onSourceChange` で外側の state と繋ぎ、保存時だけ `PapyrDocument` に変換して adapter へ渡します。永続化の層は [`@f12o/papyr-backend`](/books/backend) の interface に揃え、ローカルなら [`@f12o/papyr-adapter-fs`](/books/adapter-fs/local-json) をそのまま使えます。
 
 ```tsx
-import { useState } from 'react';
-import { createFsAdapter } from '@f12o/papyr-adapter-fs';
-import { EditorWorkspace } from '@f12o/papyr-editor-ui';
-import { parseMarkdown } from '@f12o/papyr-markdown';
+import { useState } from "react";
+import { createFsAdapter } from "@f12o/papyr-adapter-fs";
+import { EditorWorkspace } from "@f12o/papyr-editor-ui";
+import { parseMarkdown } from "@f12o/papyr-markdown";
 
-const adapter = createFsAdapter({ dir: './data/papyr' });
+const adapter = createFsAdapter({ dir: "./data/papyr" });
 
 export function PersistentEditor(): JSX.Element {
-  const [source, setSource] = useState('# Hello Papyr\n');
+  const [source, setSource] = useState("# Hello Papyr\n");
 
   async function handleSourceChange(newSource: string) {
     setSource(newSource);
 
-    const doc = parseMarkdown(newSource, { documentId: 'my-doc' });
+    const doc = parseMarkdown(newSource, { documentId: "my-doc" });
     await adapter.put(doc);
   }
 
   return (
-    <EditorWorkspace source={source} onSourceChange={handleSourceChange} documentId="my-doc" />
+    <EditorWorkspace
+      source={source}
+      onSourceChange={handleSourceChange}
+      documentId="my-doc"
+    />
   );
 }
 ```
@@ -77,8 +84,8 @@ export function PersistentEditor(): JSX.Element {
 | 要素                       | 内容                                                                                                                     |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Integrated Markdown editor | Markdown 記号を残したまま編集する canonical source。style palette は hidden rich text ではなく Markdown を直接書き換える |
-| Embedded block preview     | table / Mermaid / Excalidraw block を同じ workspace 内で preview できる                                                  |
-| Block editor modal         | preview card を double click / double tap すると Mermaid・table・Excalidraw 専用 editor が開く                           |
+| Embedded block preview     | table / Mermaid / Moonlight block を同じ workspace 内で preview できる                                                   |
+| Block editor modal         | preview card を double click / double tap すると Mermaid・table・Moonlight 専用 editor が開く                            |
 
 `readOnly` は Markdown 編集と embedded block 操作を止めたいときに使います。
 `initialSelectedDiagramId` と `onSelectedDiagramIdChange` は block 選択状態を

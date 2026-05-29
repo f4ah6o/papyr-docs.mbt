@@ -1,15 +1,15 @@
 import type {
   Block,
-  ExcalidrawBlock,
+  MoonlightBlock,
   MermaidBlock,
   PapyrDocument,
   TableBlock,
-} from '@f12o/papyr-core';
-import { excalidrawBlock, isBlockKind, mermaidBlock } from '@f12o/papyr-core';
+} from "@f12o/papyr-core";
+import { moonlightBlock, isBlockKind, mermaidBlock } from "@f12o/papyr-core";
 
-export type EmbeddedBlock = TableBlock | MermaidBlock | ExcalidrawBlock;
-export type DiagramBlock = MermaidBlock | ExcalidrawBlock;
-export type EmbeddedBlockType = 'table' | 'mermaid' | 'excalidraw';
+export type EmbeddedBlock = TableBlock | MermaidBlock | MoonlightBlock;
+export type DiagramBlock = MermaidBlock | MoonlightBlock;
+export type EmbeddedBlockType = "table" | "mermaid" | "moonlight";
 
 export interface EmbeddedBlockEntry {
   id: string;
@@ -20,7 +20,7 @@ export interface EmbeddedBlockEntry {
 
 export interface DiagramEntry {
   id: string;
-  type: Exclude<EmbeddedBlockType, 'table'>;
+  type: Exclude<EmbeddedBlockType, "table">;
   label: string;
   caption?: string;
 }
@@ -31,7 +31,10 @@ export function listEmbeddedBlocks(doc: PapyrDocument): EmbeddedBlockEntry[] {
   return entries;
 }
 
-export function findEmbeddedBlock(doc: PapyrDocument, id: string): EmbeddedBlock | undefined {
+export function findEmbeddedBlock(
+  doc: PapyrDocument,
+  id: string,
+): EmbeddedBlock | undefined {
   return findInBlocks(doc.blocks, id);
 }
 
@@ -47,13 +50,23 @@ export function updateEmbeddedBlock(
 
 export function listDiagramBlocks(doc: PapyrDocument): DiagramEntry[] {
   return listEmbeddedBlocks(doc).flatMap((entry) =>
-    entry.type === 'table'
+    entry.type === "table"
       ? []
-      : [{ id: entry.id, type: entry.type, label: entry.label, caption: entry.caption }],
+      : [
+          {
+            id: entry.id,
+            type: entry.type,
+            label: entry.label,
+            caption: entry.caption,
+          },
+        ],
   );
 }
 
-export function findDiagramBlock(doc: PapyrDocument, id: string): DiagramBlock | undefined {
+export function findDiagramBlock(
+  doc: PapyrDocument,
+  id: string,
+): DiagramBlock | undefined {
   const block = findEmbeddedBlock(doc, id);
   return block && isDiagramBlock(block) ? block : undefined;
 }
@@ -65,7 +78,9 @@ export function updateDiagramBlock(
 ): PapyrDocument {
   const target = findEmbeddedBlock(doc, id);
   if (!target || !isDiagramBlock(target)) return doc;
-  return updateEmbeddedBlock(doc, id, (block) => (isDiagramBlock(block) ? updater(block) : block));
+  return updateEmbeddedBlock(doc, id, (block) =>
+    isDiagramBlock(block) ? updater(block) : block,
+  );
 }
 
 export function appendBlock(doc: PapyrDocument, block: Block): PapyrDocument {
@@ -75,37 +90,46 @@ export function appendBlock(doc: PapyrDocument, block: Block): PapyrDocument {
   };
 }
 
-export function createDefaultMermaidBlock(id = createBlockId('mermaid')): MermaidBlock {
+export function createDefaultMermaidBlock(
+  id = createBlockId("mermaid"),
+): MermaidBlock {
   return mermaidBlock({
     id,
-    source: ['graph TD', '  Draft --> Review', '  Review --> Publish'].join('\n'),
-    caption: 'New Mermaid diagram',
+    source: ["graph TD", "  Draft --> Review", "  Review --> Publish"].join(
+      "\n",
+    ),
+    caption: "New Mermaid diagram",
   });
 }
 
-export function createDefaultExcalidrawBlock(id = createBlockId('excalidraw')): ExcalidrawBlock {
-  return excalidrawBlock({
+export function createDefaultMoonlightBlock(
+  id = createBlockId("moonlight"),
+): MoonlightBlock {
+  return moonlightBlock({
     id,
-    elements: [],
-    app_state: {
-      viewBackgroundColor: '#ffffff',
-    },
-    files: {},
-    caption: '新しい Excalidraw シーン',
+    svg: "",
+    caption: "新しい Moonlight 図",
   });
 }
 
 export function createBlockId(prefix: string): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
   }
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function collectEmbeddedBlocks(blocks: Block[], entries: EmbeddedBlockEntry[]): void {
+function collectEmbeddedBlocks(
+  blocks: Block[],
+  entries: EmbeddedBlockEntry[],
+): void {
   for (const block of blocks) {
-    if (isBlockKind(block, 'List')) {
-      for (const item of block[1].items) collectEmbeddedBlocks(item.blocks, entries);
+    if (isBlockKind(block, "List")) {
+      for (const item of block[1].items)
+        collectEmbeddedBlocks(item.blocks, entries);
       continue;
     }
     if (isEmbeddedBlock(block)) {
@@ -122,7 +146,7 @@ function collectEmbeddedBlocks(blocks: Block[], entries: EmbeddedBlockEntry[]): 
 
 function findInBlocks(blocks: Block[], id: string): EmbeddedBlock | undefined {
   for (const block of blocks) {
-    if (isBlockKind(block, 'List')) {
+    if (isBlockKind(block, "List")) {
       for (const item of block[1].items) {
         const nested = findInBlocks(item.blocks, id);
         if (nested) return nested;
@@ -143,7 +167,7 @@ function updateBlocks(
 ): Block[] {
   let changed = false;
   const nextBlocks = blocks.map((block) => {
-    if (isBlockKind(block, 'List')) {
+    if (isBlockKind(block, "List")) {
       let itemsChanged = false;
       const items = block[1].items.map((item) => {
         const nextItemBlocks = updateBlocks(item.blocks, id, updater);
@@ -155,7 +179,7 @@ function updateBlocks(
       });
       if (!itemsChanged) return block;
       changed = true;
-      return ['List', { ...block[1], items }] as Block;
+      return ["List", { ...block[1], items }] as Block;
     }
 
     if (isEmbeddedBlock(block) && block[1].id === id) {
@@ -170,26 +194,31 @@ function updateBlocks(
 }
 
 function isEmbeddedBlock(block: Block): block is EmbeddedBlock {
-  return isBlockKind(block, 'Table') || isBlockKind(block, 'Mermaid') || isBlockKind(block, 'Excalidraw');
+  return (
+    isBlockKind(block, "Table") ||
+    isBlockKind(block, "Mermaid") ||
+    isBlockKind(block, "Moonlight")
+  );
 }
 
 function isDiagramBlock(block: EmbeddedBlock): block is DiagramBlock {
-  return isBlockKind(block, 'Mermaid') || isBlockKind(block, 'Excalidraw');
+  return isBlockKind(block, "Mermaid") || isBlockKind(block, "Moonlight");
 }
 
 function describeEmbeddedBlock(block: EmbeddedBlock): string {
-  if (isBlockKind(block, 'Table')) {
+  if (isBlockKind(block, "Table")) {
     if (block[1].caption) return block[1].caption;
     return `Table (${block[1].columns.length} columns, ${block[1].rows.length} rows)`;
   }
-  if (isBlockKind(block, 'Mermaid')) {
+  if (isBlockKind(block, "Mermaid")) {
     if (block[1].caption) return block[1].caption;
-    return block[1].source.split('\n').find((line) => line.trim().length > 0) ?? 'Mermaid diagram';
+    return (
+      block[1].source.split("\n").find((line) => line.trim().length > 0) ??
+      "Mermaid diagram"
+    );
   }
   if (block[1].caption) return block[1].caption;
-  return block[1].elements.length > 0
-    ? `Excalidraw (${block[1].elements.length} elements)`
-    : 'Excalidraw scene';
+  return block[1].svg.trim().length > 0 ? "Moonlight SVG" : "Moonlight diagram";
 }
 
 function embeddedBlockType(block: EmbeddedBlock): EmbeddedBlockType {

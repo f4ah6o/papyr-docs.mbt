@@ -25,7 +25,8 @@
     "minisearch": "^7.1.0"
   },
   "devDependencies": {
-    "@f12o/papyr-test-support": "workspace:*"
+    "@f12o/papyr-test-support": "workspace:*",
+    "fast-check": "^4.7.0"
   },
   "license": "MIT",
   "author": "f12o",

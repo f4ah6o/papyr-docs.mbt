@@ -17,7 +17,7 @@ updatedAt: 2026-05-01T00:00:00.000Z
 ## まず触ってみるポイント
 
 1. 見出しやリストを編集して、Markdown source に serialize されることを見る
-2. table / Mermaid / Excalidraw block をダブルクリックして focused editor を開く
+2. table / Mermaid / Moonlight block をダブルクリックして focused editor を開く
 3. `Copy Markdown` で現在の source を持ち出し、自分の app に貼り戻す
 
 Playground の内容は browser の `localStorage` にだけ保存され、server / Worker API には送られません。保存先の設計を決める前に UI の感触だけを試せるのが利点です。

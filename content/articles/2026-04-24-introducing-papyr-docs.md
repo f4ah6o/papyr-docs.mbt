@@ -1,8 +1,8 @@
 ---
 kind: article
 slug: introducing-papyr-docs
-title: '@papyr の公式ドキュメントサイトを公開しました'
-summary: '@papyr のドキュメントを @papyr 自身で作り、Cloudflare Workers にデプロイしました。'
+title: "@papyr の公式ドキュメントサイトを公開しました"
+summary: "@papyr のドキュメントを @papyr 自身で作り、Cloudflare Workers にデプロイしました。"
 emoji: 🎉
 published: true
 topics: [release, docs]
@@ -21,7 +21,7 @@ updatedAt: 2026-04-26T00:00:00.000Z
 - 検索は `@f12o/papyr-search` の MiniSearch 実装をクライアントサイドで起動しています。
 - プレビュー表示は `@f12o/papyr-preview` の renderer を使っています。
 - `/playground` では `@f12o/papyr-editor` と `@f12o/papyr-editor-ui` を組み合わせ、Markdown-visible
-  editor と table / Mermaid / Excalidraw の embedded preview を 1 画面で切り替えずに試せます。
+  editor と table / Mermaid / Moonlight の embedded preview を 1 画面で切り替えずに試せます。
 
 ## 読む人と書く人の導線
 

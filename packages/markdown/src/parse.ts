@@ -1,5 +1,5 @@
-import { fromMarkdown } from 'mdast-util-from-markdown';
-import { gfmFromMarkdown } from 'mdast-util-gfm';
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { gfmFromMarkdown } from "mdast-util-gfm";
 import type {
   Code,
   Heading,
@@ -11,19 +11,23 @@ import type {
   RootContent,
   Table as MdTable,
   TableCell as MdTableCell,
-} from 'mdast';
-import { gfm } from 'micromark-extension-gfm';
+} from "mdast";
+import { gfm } from "micromark-extension-gfm";
 import type {
   Block,
-  ExcalidrawBlock,
+  MoonlightBlock,
   Inline,
   ListBlock,
   ListItem,
   PapyrDocument,
   TableBlock,
   TableColumn,
-} from '@f12o/papyr-core';
-import { MERMAID_FENCE, PAPYR_EXCALIDRAW_FENCE, PAPYR_TABLE_FENCE } from './fences.js';
+} from "@f12o/papyr-core";
+import {
+  MERMAID_FENCE,
+  PAPYR_MOONLIGHT_FENCE,
+  PAPYR_TABLE_FENCE,
+} from "./fences.js";
 
 export interface ParseOptions {
   documentId?: string;
@@ -48,16 +52,21 @@ export class UnsupportedMarkdownError extends Error {}
  * @returns Parsed PapyrDocument
  * @throws {UnsupportedMarkdownError} if input contains unsupported Markdown
  */
-export function parseMarkdown(input: string, options: ParseOptions = {}): PapyrDocument {
+export function parseMarkdown(
+  input: string,
+  options: ParseOptions = {},
+): PapyrDocument {
   const tree = fromMarkdown(input, {
     extensions: [gfm()],
     mdastExtensions: [gfmFromMarkdown()],
   });
   validateRoot(tree);
   const makeId = options.generateId ?? defaultIdGenerator();
-  const blocks = tree.children.flatMap((node) => convertRootChild(node, makeId));
+  const blocks = tree.children.flatMap((node) =>
+    convertRootChild(node, makeId),
+  );
   return {
-    id: options.documentId ?? 'untitled',
+    id: options.documentId ?? "untitled",
     blocks,
   };
 }
@@ -91,43 +100,49 @@ function validateRoot(tree: Root): void {
 
 function validateRootChild(node: RootContent): void {
   switch (node.type) {
-    case 'heading':
-    case 'paragraph':
+    case "heading":
+    case "paragraph":
       validateInlineNodes(node.children);
       return;
-    case 'list':
+    case "list":
       for (const item of node.children) validateListItem(item);
       return;
-    case 'table':
+    case "table":
       validateTable(node);
       return;
-    case 'code':
+    case "code":
       return;
     default:
-      throw new UnsupportedMarkdownError(`Unsupported Markdown block: ${node.type}`);
+      throw new UnsupportedMarkdownError(
+        `Unsupported Markdown block: ${node.type}`,
+      );
   }
 }
 
 function validateListItem(item: MdListItem): void {
   if (item.checked !== null && item.checked !== undefined) {
-    throw new UnsupportedMarkdownError('Unsupported Markdown block: taskListItem');
+    throw new UnsupportedMarkdownError(
+      "Unsupported Markdown block: taskListItem",
+    );
   }
   for (const child of item.children) {
     switch (child.type) {
-      case 'paragraph':
-      case 'heading':
+      case "paragraph":
+      case "heading":
         validateInlineNodes(child.children);
         break;
-      case 'list':
+      case "list":
         for (const nestedItem of child.children) validateListItem(nestedItem);
         break;
-      case 'table':
+      case "table":
         validateTable(child);
         break;
-      case 'code':
+      case "code":
         break;
       default:
-        throw new UnsupportedMarkdownError(`Unsupported Markdown block: ${child.type}`);
+        throw new UnsupportedMarkdownError(
+          `Unsupported Markdown block: ${child.type}`,
+        );
     }
   }
 }
@@ -146,18 +161,20 @@ function validateInlineNodes(nodes: PhrasingContent[]): void {
 
 function validateInlineNode(node: PhrasingContent): void {
   switch (node.type) {
-    case 'text':
-    case 'inlineCode':
-    case 'break':
+    case "text":
+    case "inlineCode":
+    case "break":
       return;
-    case 'emphasis':
-    case 'strong':
-    case 'delete':
-    case 'link':
+    case "emphasis":
+    case "strong":
+    case "delete":
+    case "link":
       validateInlineNodes(node.children);
       return;
     default:
-      throw new UnsupportedMarkdownError(`Unsupported Markdown inline: ${node.type}`);
+      throw new UnsupportedMarkdownError(
+        `Unsupported Markdown inline: ${node.type}`,
+      );
   }
 }
 
@@ -166,19 +183,19 @@ function convertRootChild(node: RootContent, makeId: () => string): Block[] {
 }
 
 function convertBlockNode(
-  node: RootContent | MdListItem['children'][number],
+  node: RootContent | MdListItem["children"][number],
   makeId: () => string,
 ): Block[] {
   switch (node.type) {
-    case 'heading':
+    case "heading":
       return [convertHeading(node, makeId)];
-    case 'paragraph':
+    case "paragraph":
       return [convertParagraph(node, makeId)];
-    case 'list':
+    case "list":
       return [convertList(node, makeId)];
-    case 'code':
+    case "code":
       return [convertCode(node, makeId)];
-    case 'table':
+    case "table":
       return [convertTable(node, makeId)];
     default:
       return [];
@@ -186,30 +203,41 @@ function convertBlockNode(
 }
 
 function convertHeading(node: Heading, makeId: () => string): Block {
-  return ['Heading', {
-    id: makeId(),
-    level: node.depth,
-    content: convertInline(node.children),
-  }];
+  return [
+    "Heading",
+    {
+      id: makeId(),
+      level: node.depth,
+      content: convertInline(node.children),
+    },
+  ];
 }
 
 function convertParagraph(node: Paragraph, makeId: () => string): Block {
-  return ['Paragraph', {
-    id: makeId(),
-    content: convertInline(node.children),
-  }];
+  return [
+    "Paragraph",
+    {
+      id: makeId(),
+      content: convertInline(node.children),
+    },
+  ];
 }
 
 function convertList(node: MdList, makeId: () => string): ListBlock {
-  return ['List', {
-    id: makeId(),
-    ordered: Boolean(node.ordered),
-    items: node.children.map((item) => convertListItem(item, makeId)),
-  }];
+  return [
+    "List",
+    {
+      id: makeId(),
+      ordered: Boolean(node.ordered),
+      items: node.children.map((item) => convertListItem(item, makeId)),
+    },
+  ];
 }
 
 function convertListItem(item: MdListItem, makeId: () => string): ListItem {
-  const blocks = item.children.flatMap((child) => convertBlockNode(child, makeId));
+  const blocks = item.children.flatMap((child) =>
+    convertBlockNode(child, makeId),
+  );
   return {
     blocks: blocks.length > 0 ? blocks : [emptyParagraph(makeId())],
   };
@@ -218,15 +246,19 @@ function convertListItem(item: MdListItem, makeId: () => string): ListItem {
 function convertCode(node: Code, makeId: () => string): Block {
   const lang = node.lang ?? undefined;
   if (lang === PAPYR_TABLE_FENCE) return decodeTable(node.value, makeId());
-  if (lang === PAPYR_EXCALIDRAW_FENCE) return decodeExcalidraw(node.value, makeId());
+  if (lang === PAPYR_MOONLIGHT_FENCE)
+    return decodeMoonlight(node.value, makeId());
   if (lang === MERMAID_FENCE) {
-    return ['Mermaid', { id: makeId(), source: node.value }];
+    return ["Mermaid", { id: makeId(), source: node.value }];
   }
-  return ['Code', {
-    id: makeId(),
-    ...(lang !== undefined && { language: lang }),
-    source: node.value,
-  }];
+  return [
+    "Code",
+    {
+      id: makeId(),
+      ...(lang !== undefined && { language: lang }),
+      source: node.value,
+    },
+  ];
 }
 
 function convertTable(node: MdTable, makeId: () => string): TableBlock {
@@ -238,40 +270,55 @@ function convertTable(node: MdTable, makeId: () => string): TableBlock {
   );
   const usedKeys = new Set<string>();
 
-  return ['Table', {
-    id: makeId(),
-    columns: Array.from({ length: columnCount }, (_, index) => {
-      const header = tableCellText(headerRow?.children[index]);
-      const align = normalizeTableAlign(node.align?.[index]);
-      return {
-        key: uniqueColumnKey(header, index, usedKeys),
-        header,
-        ...(align !== undefined && { align }),
-      };
-    }),
-    rows: bodyRows.map((row) =>
-      Array.from({ length: columnCount }, (_, index) => ({
-        text: tableCellText(row.children[index]),
-      })),
-    ),
-  }];
+  return [
+    "Table",
+    {
+      id: makeId(),
+      columns: Array.from({ length: columnCount }, (_, index) => {
+        const header = tableCellText(headerRow?.children[index]);
+        const align = normalizeTableAlign(node.align?.[index]);
+        return {
+          key: uniqueColumnKey(header, index, usedKeys),
+          header,
+          ...(align !== undefined && { align }),
+        };
+      }),
+      rows: bodyRows.map((row) =>
+        Array.from({ length: columnCount }, (_, index) => ({
+          text: tableCellText(row.children[index]),
+        })),
+      ),
+    },
+  ];
 }
 
 function decodeTable(value: string, id: string): TableBlock {
-  const parsed = JSON.parse(value) as Omit<TableBlock[1], 'id'>;
-  return ['Table', { id, ...parsed }];
+  const parsed = JSON.parse(value) as Omit<TableBlock[1], "id">;
+  return ["Table", { id, ...parsed }];
 }
 
-function decodeExcalidraw(value: string, id: string): ExcalidrawBlock {
-  const parsed = JSON.parse(value) as Omit<ExcalidrawBlock[1], 'id'>;
-  return ['Excalidraw', { id, ...parsed }];
+function decodeMoonlight(value: string, id: string): MoonlightBlock {
+  const parsed = JSON.parse(value) as Record<string, unknown>;
+  if (typeof parsed.svg !== "string") {
+    throw new UnsupportedMarkdownError(
+      "papyr-moonlight fence requires a string svg field",
+    );
+  }
+  return [
+    "Moonlight",
+    {
+      id,
+      svg: parsed.svg,
+      ...(typeof parsed.caption === "string" && { caption: parsed.caption }),
+    },
+  ];
 }
 
 function emptyParagraph(id: string): Block {
-  return ['Paragraph', { id, content: [] }];
+  return ["Paragraph", { id, content: [] }];
 }
 
-type Mark = NonNullable<Inline['marks']>[number];
+type Mark = NonNullable<Inline["marks"]>[number];
 
 function convertInline(nodes: PhrasingContent[]): Inline[] {
   const runs: Inline[] = [];
@@ -286,36 +333,41 @@ function collectInline(
   out: Inline[],
 ): void {
   switch (node.type) {
-    case 'text':
+    case "text":
       out.push(buildInline(node.value, marks, href));
       return;
-    case 'inlineCode':
-      out.push(buildInline(node.value, dedup([...marks, 'code']), href));
+    case "inlineCode":
+      out.push(buildInline(node.value, dedup([...marks, "code"]), href));
       return;
-    case 'emphasis':
+    case "emphasis":
       for (const child of node.children)
-        collectInline(child, dedup([...marks, 'italic']), href, out);
+        collectInline(child, dedup([...marks, "italic"]), href, out);
       return;
-    case 'strong':
-      for (const child of node.children) collectInline(child, dedup([...marks, 'bold']), href, out);
-      return;
-    case 'delete':
+    case "strong":
       for (const child of node.children)
-        collectInline(child, dedup([...marks, 'strike']), href, out);
+        collectInline(child, dedup([...marks, "bold"]), href, out);
       return;
-    case 'link':
+    case "delete":
       for (const child of node.children)
-        collectInline(child, dedup([...marks, 'link']), node.url, out);
+        collectInline(child, dedup([...marks, "strike"]), href, out);
       return;
-    case 'break':
-      out.push(buildInline('\n', marks, href));
+    case "link":
+      for (const child of node.children)
+        collectInline(child, dedup([...marks, "link"]), node.url, out);
+      return;
+    case "break":
+      out.push(buildInline("\n", marks, href));
       return;
     default:
       return;
   }
 }
 
-function buildInline(text: string, marks: Mark[], href: string | undefined): Inline {
+function buildInline(
+  text: string,
+  marks: Mark[],
+  href: string | undefined,
+): Inline {
   return {
     text,
     ...(marks.length > 0 && { marks }),
@@ -328,19 +380,23 @@ function dedup(marks: Mark[]): Mark[] {
 }
 
 function tableCellText(cell: MdTableCell | undefined): string {
-  if (!cell) return '';
+  if (!cell) return "";
   return convertInline(cell.children)
     .map((run) => run.text)
-    .join('');
+    .join("");
 }
 
 function normalizeTableAlign(
-  value: TableColumn['align'] | null | undefined,
-): TableColumn['align'] | undefined {
+  value: TableColumn["align"] | null | undefined,
+): TableColumn["align"] | undefined {
   return value ?? undefined;
 }
 
-function uniqueColumnKey(header: string, index: number, usedKeys: Set<string>): string {
+function uniqueColumnKey(
+  header: string,
+  index: number,
+  usedKeys: Set<string>,
+): string {
   const base = normalizeColumnKey(header) || `column-${index + 1}`;
   let key = base;
   let suffix = 2;
@@ -354,8 +410,8 @@ function uniqueColumnKey(header: string, index: number, usedKeys: Set<string>): 
 function normalizeColumnKey(value: string): string {
   return value
     .trim()
-    .normalize('NFKC')
+    .normalize("NFKC")
     .toLowerCase()
-    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^\p{Letter}\p{Number}]+/gu, "-")
+    .replace(/^-+|-+$/g, "");
 }
