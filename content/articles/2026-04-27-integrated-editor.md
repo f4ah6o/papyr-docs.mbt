@@ -23,74 +23,74 @@ React UI package で、`EditorWorkspace` を提供します。
 
 ```tsx
 import { useState } from "react";
-import {
-  EditorWorkspace,
-  createSampleDocumentSource,
-} from "@f12o/papyr-editor-ui";
-import "@f12o/papyr-editor-ui/styles.css";
+import { EditorWorkspace } from "@f12o/papyr-editor-ui";
 
-export function MyEditor(): JSX.Element {
-  const [source, setSource] = useState(() => createSampleDocumentSource());
+export function MyEditor() {
+  const [source, setSource] = useState("# Hello Papyr\n");
 
   return (
     <EditorWorkspace
       source={source}
       onSourceChange={setSource}
       documentId="my-doc"
-      title="My Papyr Editor"
     />
   );
 }
 ```
 
-`createSampleDocumentSource()` は Markdown・table・Mermaid・Moonlight を含む sample source を返します。空の editor ではなく、Papyr らしい document をすぐ見せたい画面に向いています。
+`source` と `onSourceChange` だけで、外側の React state と workspace をつなげます。
+
+## sample source を使う
+
+`createSampleDocumentSource()` は Markdown・table・Mermaid・Moonlight を含む sample source を返します。
+
+空の editor ではなく、Papyr らしい document をすぐ見せたい画面に向いています。
 
 ## 保存先へつなぐ
 
-`source` / `onSourceChange` で外側の state と繋ぎ、保存時だけ `PapyrDocument` に変換して adapter へ渡します。永続化の層は [`@f12o/papyr-backend`](/books/backend) の interface に揃え、ローカルなら [`@f12o/papyr-adapter-fs`](/books/adapter-fs/local-json) をそのまま使えます。
+`source` / `onSourceChange` で外側の state と繋ぎます。
+
+保存時だけ `PapyrDocument` に変換します。
+
+## 保存処理の例
 
 ```tsx
-import { useState } from "react";
-import { createFsAdapter } from "@f12o/papyr-adapter-fs";
-import { EditorWorkspace } from "@f12o/papyr-editor-ui";
 import { parseMarkdown } from "@f12o/papyr-markdown";
 
-const adapter = createFsAdapter({ dir: "./data/papyr" });
-
-export function PersistentEditor(): JSX.Element {
-  const [source, setSource] = useState("# Hello Papyr\n");
-
-  async function handleSourceChange(newSource: string) {
-    setSource(newSource);
-
-    const doc = parseMarkdown(newSource, { documentId: "my-doc" });
-    await adapter.put(doc);
-  }
-
-  return (
-    <EditorWorkspace
-      source={source}
-      onSourceChange={handleSourceChange}
-      documentId="my-doc"
-    />
-  );
+async function saveSource(newSource: string) {
+  const doc = parseMarkdown(newSource, { documentId: "my-doc" });
+  await saveDocument(doc);
 }
 ```
 
-`EditorWorkspace` 自体は storage を知りません。保存先を file / kintone / Cloudflare などに差し替えたいときも、adapter 側だけで完結します。
+この関数を `onSourceChange` から呼ぶと、UI と保存処理を分けて扱えます。
+
+## adapter に任せる
+
+永続化の層は [`@f12o/papyr-backend`](/books/backend) の interface に揃えます。
+
+ローカルなら [`@f12o/papyr-adapter-fs`](/books/adapter-fs/local-json) をそのまま使えます。
+
+`EditorWorkspace` 自体は storage を知りません。保存先の差し替えは adapter 側だけで完結します。
 
 ## workspace でできること
 
 | 要素                       | 内容                                                                                                                     |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Integrated Markdown editor | Markdown 記号を残したまま編集する canonical source。style palette は hidden rich text ではなく Markdown を直接書き換える |
+| Integrated Markdown editor | Markdown source を直接編集する                                                                          |
 | Embedded block preview     | table / Mermaid / Moonlight block を同じ workspace 内で preview できる                                                   |
 | Block editor modal         | preview card を double click / double tap すると Mermaid・table・Moonlight 専用 editor が開く                            |
 
+## 状態管理 hooks
+
 `readOnly` は Markdown 編集と embedded block 操作を止めたいときに使います。
+
 `initialSelectedDiagramId` と `onSelectedDiagramIdChange` は block 選択状態を
-外で保持したいときのフックです。`eyebrow`、`subtitle`、`banner` は
-top bar の文言や補助 UI を差し込みたいときに使います。
+外で保持したいときのフックです。
+
+## workspace の表示補助
+
+`eyebrow`、`subtitle`、`banner` は top bar の文言や補助 UI を差し込みたいときに使います。
 
 ## headless layer に降りる場合
 

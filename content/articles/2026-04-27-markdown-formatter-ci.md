@@ -34,55 +34,43 @@ const formatted = formatMarkdown(source);
 
 ## CI での使い方
 
-追加依存を増やしたくないなら、Node.js built-ins だけで check script を書くのが簡単です。
+Node.js built-ins だけで check script を書けます。
+
+## check script
+
+下は check loop の抜粋です。
 
 ```js
-// scripts/check-format.mjs
-import { readFile, readdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { formatMarkdown } from "@f12o/papyr-markdown-formatter";
 
-const root = "apps/docs/content";
-const shouldWrite = process.argv.includes("--write");
 let hasError = false;
 
-async function* walk(dir) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const fullPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      yield* walk(fullPath);
-      continue;
-    }
-    if (entry.isFile() && fullPath.endsWith(".md")) {
-      yield fullPath;
-    }
-  }
-}
-
-for await (const file of walk(root)) {
-  const original = await readFile(file, "utf8");
-  const formatted = formatMarkdown(original);
-
-  if (original === formatted) continue;
-
-  if (shouldWrite) {
-    await writeFile(file, formatted, "utf8");
-    console.error(`formatted: ${file}`);
-    continue;
-  }
-
-  console.error(`needs formatting: ${file}`);
+for (const file of markdownFiles()) {
+  const source = await readText(file);
+  if (source === formatMarkdown(source)) continue;
   hasError = true;
 }
 
 if (hasError) process.exitCode = 1;
 ```
 
+`markdownFiles()` と `readText()` は、task runner や file API に合わせて用意します。
+
+## 自動修正 mode
+
+ローカルでは同じ loop で formatted source を file に書き戻します。
+
+## 対象ファイルの渡し方
+
+実際の運用では `git ls-files` や task runner から対象 Markdown を渡します。
+
+## CI とローカルの使い分け
+
 CI では check mode、ローカルでは `--write` を付けて自動修正、という 2 つの使い方に分けられます。
 
 ```bash
-node scripts/check-format.mjs
-node scripts/check-format.mjs --write
+node scripts/check-format.mjs apps/docs/content/**/*.md
+node scripts/check-format.mjs --write apps/docs/content/**/*.md
 ```
 
 ## GitHub Actions での設定例
