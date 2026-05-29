@@ -100,3 +100,25 @@ Do not close this issue with only manual visual checks.
 - `pnpm run lint:slides` passes.
 - The final resolution records the updated `lint-slides` warning count and the
   remaining warning categories.
+
+## Progress
+
+2026-05-30:
+
+- Fixed the five high-priority documents listed above so each reports `0`
+  `lint-slides --viewport 1280x720` warnings:
+  - `content/packages/core/book.md`
+  - `content/articles/2026-04-27-integrated-editor.md`
+  - `content/articles/2026-04-27-markdown-formatter-ci.md`
+  - `content/articles/2026-05-09-moonlight-authoring-sample.md`
+  - `content/packages/editor-ui/chapters/01-editor-workspace.md`
+- Overall Markdown lint changed from 72 warnings across 162 slides to 49
+  warnings across 182 slides.
+- Remaining warning categories:
+  - `too_much_text`: 31
+  - `code_too_large`: 8
+  - `code_line_too_long`: 5
+  - `visual_overload`: 2
+  - `too_many_blocks`: 1
+  - `table_too_tall`: 1
+  - `long_sentence`: 1

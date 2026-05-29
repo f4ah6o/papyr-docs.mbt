@@ -12,29 +12,28 @@ updatedAt: 2026-04-26T00:00:00.000Z
 
 # EditorWorkspace
 
+`EditorWorkspace` は Markdown source と visual editor をつなぐ React component です。
+
+## 最小コード
+
 ```tsx
 import { useState } from "react";
-import {
-  EditorWorkspace,
-  createSampleDocumentSource,
-} from "@f12o/papyr-editor-ui";
-import "@f12o/papyr-editor-ui/styles.css";
+import { EditorWorkspace } from "@f12o/papyr-editor-ui";
 
 export function PapyrEditor(): JSX.Element {
-  const [source, setSource] = useState(() => createSampleDocumentSource());
+  const [source, setSource] = useState("# Papyr\n");
 
   return (
     <EditorWorkspace
       source={source}
       onSourceChange={setSource}
       documentId="papyr-editor-demo"
-      title="Papyr Playground"
-      editorModes={["rich", "markdown"]}
-      initialEditorMode="rich"
     />
   );
 }
 ```
+
+## workspace の責務
 
 `EditorWorkspace` は 3 つの責務をまとめて持ちます。
 
@@ -42,18 +41,24 @@ export function PapyrEditor(): JSX.Element {
 2. visual editor 上で見出しや強調を編集し、変更を Markdown source へ serialize する
 3. table / Mermaid / Moonlight の embedded preview と block editor を同じ workspace に載せる
 
+## sample source
+
+`createSampleDocumentSource()` は Markdown・table・Mermaid・Moonlight を含む serialized source を返します。
+
+playground や story 的な画面で、空状態ではなく「Papyr らしい document」を最初から見せたいときに向いています。
+
 ## props の要点
 
 `source` と `onSourceChange` は外側で source を保持するための必須 props
 です。`documentId` は parse 時の document ID で、省略時は fallback ID
-を使います。`readOnly` は editor と embedded block 操作を止めたいときに
-使います。`editorModes` は互換性のために残っている deprecated prop で、
-現在は integrated Markdown surface に固定です。
+を使います。
+
+## 操作を制御する props
+
+`readOnly` は editor と embedded block 操作を止めたいときに使います。`editorModes` は互換性のために残っている deprecated prop で、現在は integrated Markdown surface に固定です。
+
 `initialSelectedDiagramId` と `onSelectedDiagramIdChange` は、embedded block
 の選択状態を外で保持したいときのフックです。
-
-`createSampleDocumentSource()` は Markdown・table・Mermaid・Moonlight を含む serialized source を返します。
-playground や story 的な画面で、空状態ではなく「Papyr らしい document」を最初から見せたいときに向いています。
 
 ## 依存関係
 
