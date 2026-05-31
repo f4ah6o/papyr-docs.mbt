@@ -35,6 +35,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install MoonBit CLI
+        run: |
+          # Versioned MoonBit artifacts currently return 403; use latest so CI can build the bridge.
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | MOONBIT_INSTALL_VERSION="latest" bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Update MoonBit dependencies
+        run: moon update
+
       - name: Typecheck
         run: pnpm run typecheck
 
@@ -68,6 +77,18 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install MoonBit CLI
+        run: |
+          # Versioned MoonBit artifacts currently return 403; use latest so CI can build the bridge.
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | MOONBIT_INSTALL_VERSION="latest" bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Update MoonBit dependencies
+        run: moon update
+
+      - name: Generate MoonBit bridge
+        run: node scripts/build-moonbit-bridge.mjs
 
       - name: Build
         run: pnpm run build
@@ -112,6 +133,18 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install MoonBit CLI
+        run: |
+          # Versioned MoonBit artifacts currently return 403; use latest so CI can build the bridge.
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | MOONBIT_INSTALL_VERSION="latest" bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Update MoonBit dependencies
+        run: moon update
+
+      - name: Generate MoonBit bridge
+        run: node scripts/build-moonbit-bridge.mjs
 
       - name: Build
         run: pnpm run build
