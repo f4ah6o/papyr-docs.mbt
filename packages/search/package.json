@@ -16,12 +16,16 @@
     "dist"
   ],
   "scripts": {
+    "prebuild": "node ../../scripts/build-moonbit-bridge.mjs",
     "build": "vite build",
+    "pretest": "node ../../scripts/build-moonbit-bridge.mjs",
     "test": "vitest run",
+    "pretypecheck": "node ../../scripts/build-moonbit-bridge.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@f12o/papyr-core": "workspace:*",
+    "@f12o/papyr-moonbit-bridge": "workspace:*",
     "minisearch": "^7.1.0"
   },
   "devDependencies": {

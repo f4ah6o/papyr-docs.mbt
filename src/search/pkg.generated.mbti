@@ -1,0 +1,49 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/papyr/search"
+
+import {
+  "f4ah6o/papyr/core",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn search_block_text(@core.Block) -> String
+
+pub fn search_extract_snippet(String, String, context? : Int) -> String?
+
+pub fn search_extract_snippet_request(SnippetRequest) -> SnippetResult
+
+pub fn search_to_indexable(@core.PapyrDocument) -> IndexableDocument
+
+// Errors
+
+// Types and methods
+pub struct BlockSnapshot {
+  id : String
+  kind : String
+  text : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct IndexableDocument {
+  id : String
+  title : String
+  headings : String
+  body : String
+  blocks : Array[BlockSnapshot]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct SnippetRequest {
+  text : String
+  query : String
+  context : Int?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct SnippetResult {
+  snippet : String?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+// Type aliases
+
+// Traits
+

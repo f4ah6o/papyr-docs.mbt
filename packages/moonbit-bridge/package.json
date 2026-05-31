@@ -1,0 +1,46 @@
+{
+  "name": "@f12o/papyr-moonbit-bridge",
+  "version": "2026.5.0",
+  "description": "Papyr MoonBit bridge for browser and Node.js integrations",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src/generated"
+  ],
+  "scripts": {
+    "prebuild": "node ../../scripts/build-moonbit-bridge.mjs",
+    "build": "vite build",
+    "pretest": "node ../../scripts/build-moonbit-bridge.mjs",
+    "test": "vitest run --passWithNoTests",
+    "pretypecheck": "node ../../scripts/build-moonbit-bridge.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "vite-plugin-dts": "^4.4.0",
+    "vitest": "^2.1.0"
+  },
+  "license": "MIT",
+  "author": "f12o",
+  "homepage": "https://github.com/f4ah6o/papyr.mbt#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/f4ah6o/papyr.mbt.git",
+    "directory": "packages/moonbit-bridge"
+  },
+  "bugs": {
+    "url": "https://github.com/f4ah6o/papyr.mbt/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

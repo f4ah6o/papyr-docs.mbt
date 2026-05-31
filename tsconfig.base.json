@@ -6,6 +6,7 @@
     "moduleResolution": "Bundler",
     "paths": {
       "@f12o/papyr-core": ["packages/core/src/index.ts"],
+      "@f12o/papyr-moonbit-bridge": ["packages/moonbit-bridge/src/index.ts"],
       "@f12o/papyr-markdown": ["packages/markdown/src/index.ts"],
       "@f12o/papyr-markdown-formatter": ["packages/markdown-formatter/src/index.ts"],
       "@f12o/papyr-editor": ["packages/editor/src/index.ts"],

@@ -6,6 +6,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@f12o/papyr-core': resolve(__dirname, '../core/src/index.ts'),
+      '@f12o/papyr-moonbit-bridge': resolve(__dirname, '../moonbit-bridge/src/index.ts'),
     },
   },
   build: {
@@ -16,7 +17,7 @@ export default defineConfig({
     },
     sourcemap: true,
     rollupOptions: {
-      external: ['@f12o/papyr-core', 'minisearch'],
+      external: ['@f12o/papyr-core', '@f12o/papyr-moonbit-bridge', 'minisearch'],
     },
   },
   plugins: [dts({ rollupTypes: true, tsconfigPath: './tsconfig.json' })],

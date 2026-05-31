@@ -1,0 +1,115 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/papyr/bridge"
+
+import {
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn papyr_authoring_tool_json(String) -> String
+
+pub fn papyr_collect_document_headings_json(String) -> String
+
+pub fn papyr_document_plain_text_json(String) -> String
+
+pub fn papyr_document_title_json(String) -> String
+
+pub fn papyr_document_tool_json(String) -> String
+
+pub fn papyr_insert_document_block_after_json(String) -> String
+
+pub fn papyr_parse_markdown_json(String) -> String
+
+pub fn papyr_relation_build_publication_tree_state_json(String) -> String
+
+pub fn papyr_relation_check_json(String) -> String
+
+pub fn papyr_relation_dedupe_raw_json(String) -> String
+
+pub fn papyr_relation_dedupe_resolved_json(String) -> String
+
+pub fn papyr_relation_format_diagnostic_json(String) -> String
+
+pub fn papyr_relation_list_chapter_ids_for_book_json(String) -> String
+
+pub fn papyr_relation_project_backlinks_json(String) -> String
+
+pub fn papyr_relation_project_graph_json(String) -> String
+
+pub fn papyr_relation_project_tree_json(String) -> String
+
+pub fn papyr_relation_resolve_json(String) -> String
+
+pub fn papyr_relation_sort_raw_json(String) -> String
+
+pub fn papyr_relation_sort_resolved_json(String) -> String
+
+pub fn papyr_remove_document_block_json(String) -> String
+
+pub fn papyr_replace_document_block_json(String) -> String
+
+pub fn papyr_resolve_pdf_layout_json(String) -> String
+
+pub fn papyr_search_block_text_json(String) -> String
+
+pub fn papyr_search_extract_snippet_json(String) -> String
+
+pub fn papyr_search_to_indexable_json(String) -> String
+
+pub fn papyr_serialize_document_json(String) -> String
+
+pub fn papyr_validate_document_json(String) -> String
+
+pub fn papyr_visit_document_blocks_json(String) -> String
+
+// Errors
+
+// Types and methods
+type AuthoringToolRequest derive(@json.FromJson)
+
+type CreateDocumentInput derive(@json.FromJson)
+
+type DocumentBlockOperationInput derive(@json.FromJson)
+
+type DocumentIdInput derive(@json.FromJson)
+
+type DocumentStackToolRequest derive(@json.FromJson)
+
+type DocumentToMarkdownInput derive(@json.FromJson)
+
+type DocumentUtilityInput derive(@json.FromJson)
+
+type ExportPapyrBundleInput derive(@json.FromJson)
+
+type ExportPublicationInput derive(@json.FromJson)
+
+type ExportWorkspaceInput derive(@json.FromJson)
+
+type FormatMarkdownInput derive(@json.FromJson)
+
+type MarkdownParseRequest derive(@json.FromJson)
+
+type MarkdownToDocumentInput derive(@json.FromJson)
+
+type PdfLayoutResolveInput derive(ToJson, @json.FromJson)
+
+type PreviewDocumentInput derive(@json.FromJson)
+
+type RelationListChapterIdsInput derive(@json.FromJson)
+
+type SearchBlockTextInput derive(@json.FromJson)
+
+type SearchDocumentsInput derive(@json.FromJson)
+
+type SearchSnippetInput derive(@json.FromJson)
+
+type SerializeDocumentEnvelope derive(ToJson)
+
+type UpdateDocumentInput derive(@json.FromJson)
+
+type ValidateDocumentInput derive(@json.FromJson)
+
+// Type aliases
+
+// Traits
+
