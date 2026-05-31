@@ -23,6 +23,7 @@
     "upload:r2": "tsx scripts/upload-r2.ts",
     "lint:slides": "playwright test e2e/slide-lint.spec.ts",
     "test": "vitest run",
+    "pretypecheck": "node scripts/build-moonbit-bridge.mjs",
     "typecheck": "tsc --noEmit",
     "e2e": "playwright test",
     "e2e:install": "playwright install --with-deps chromium webkit"
