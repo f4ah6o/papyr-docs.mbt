@@ -1,0 +1,195 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/papyr/relation"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn build_publication_tree_state(BuildPublicationTreeStateOptions) -> PublicationTreeState
+
+pub fn check_relations(CheckRelationsOptions) -> CheckRelationsResult
+
+pub fn compare_metadata(RelationMetadata?, RelationMetadata?) -> Int
+
+pub fn compare_raw_relations(RawRelation, RawRelation) -> Int
+
+pub fn compare_resolved_relations(ResolvedRelation, ResolvedRelation) -> Int
+
+pub fn create_relation_policy(Map[String, RelationKindRule]?) -> RelationPolicy
+
+pub fn dedupe_raw_relations(Array[RawRelation]) -> Array[RawRelation]
+
+pub fn dedupe_resolved_relations(Array[ResolvedRelation]) -> Array[ResolvedRelation]
+
+pub fn format_relation_diagnostic(PublicationTreeDiagnostic) -> String
+
+pub fn get_inverse_relation_kind(RelationPolicy, String) -> String?
+
+pub fn get_max_outgoing_relations(RelationPolicy, String) -> Int?
+
+pub fn get_relation_kind_rule(RelationPolicy, String) -> RelationKindRule
+
+pub fn is_acyclic_relation_kind(RelationPolicy, String) -> Bool
+
+pub fn is_derived_relation_kind(String) -> Bool
+
+pub fn is_relation_kind(String) -> Bool
+
+pub fn is_stored_relation_kind(String) -> Bool
+
+pub fn list_chapter_ids_for_book(String, PublicationTreeState) -> Array[String]
+
+pub fn papyr_relation_policy() -> RelationPolicy
+
+pub fn project_backlinks(ProjectRelationOptions) -> Map[String, Array[String]]
+
+pub fn project_graph(Array[ResolvedRelation]) -> Array[GraphEdge]
+
+pub fn project_tree(ProjectRelationOptions) -> TreeProjection
+
+pub fn raw_relation_key(RawRelation) -> String
+
+pub fn resolve_relations(ResolveRelationsOptions) -> ResolveRelationsResult
+
+pub fn resolved_relation_key(ResolvedRelation) -> String
+
+pub fn should_derive_inverse(RelationPolicy, String) -> Bool
+
+pub fn sort_raw_relations(Array[RawRelation]) -> Array[RawRelation]
+
+pub fn sort_resolved_relations(Array[ResolvedRelation]) -> Array[ResolvedRelation]
+
+// Errors
+
+// Types and methods
+pub struct BuildPublicationTreeStateOptions {
+  docs : Array[PublicationDocument]
+} derive(ToJson, @json.FromJson)
+
+pub struct CheckRelationsOptions {
+  documentIds : Array[String]
+  relations : Array[RawRelation]
+  policy : RelationPolicy?
+} derive(ToJson, @json.FromJson)
+
+pub struct CheckRelationsResult {
+  relations : Array[RawRelation]
+  diagnostics : Array[RelationDiagnostic]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+type ChildEdge derive(Eq, @debug.Debug)
+
+pub struct GraphEdge {
+  source : String
+  target : String
+  rel : String
+  derived : Bool
+  metadata : RelationMetadata?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct ProjectRelationOptions {
+  documentIds : Array[String]
+  relations : Array[ResolvedRelation]
+} derive(ToJson, @json.FromJson)
+
+pub struct PublicationDocument {
+  id : String
+  publication : PublicationRelationMeta?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct PublicationHelperDiagnostic {
+  code : String
+  message : String
+  documentId : String
+  relatedDocumentIds : Array[String]?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct PublicationRelationMeta {
+  kind : String
+  bookId : String?
+  chapterOrder : Int?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct PublicationTreeDiagnostic {
+  code : String
+  message : String
+  documentId : String?
+  relation : RawRelation?
+  relatedDocumentIds : Array[String]?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct PublicationTreeState {
+  projection : TreeProjection
+  diagnostics : Array[PublicationTreeDiagnostic]
+} derive(ToJson, @json.FromJson)
+
+pub struct RawRelation {
+  source : String
+  target : String
+  rel : String
+  metadata : RelationMetadata?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct RelationDiagnostic {
+  code : String
+  message : String
+  documentId : String?
+  relation : RawRelation?
+  relatedDocumentIds : Array[String]?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct RelationKindRule {
+  stored : Bool
+  inverse : String?
+  deriveInverse : Bool?
+  maxOutgoing : Int?
+  acyclic : Bool?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct RelationMetadata {
+  label : String?
+  order : Double?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct RelationPolicy {
+  kinds : Map[String, RelationKindRule]
+} derive(ToJson, @json.FromJson)
+
+pub struct ResolveRelationsOptions {
+  documentIds : Array[String]
+  relations : Array[RawRelation]
+  policy : RelationPolicy?
+} derive(ToJson, @json.FromJson)
+
+pub struct ResolveRelationsResult {
+  relations : Array[RawRelation]
+  resolvedRelations : Array[ResolvedRelation]
+  diagnostics : Array[RelationDiagnostic]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct ResolvedRelation {
+  source : String
+  target : String
+  rel : String
+  metadata : RelationMetadata?
+  derived : Bool
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct TreeProjection {
+  roots : Array[String]
+  leafRoots : Array[String]
+  nodes : Map[String, TreeProjectionNode]
+} derive(ToJson, @json.FromJson)
+
+pub struct TreeProjectionNode {
+  id : String
+  parentId : String?
+  childIds : Array[String]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+// Type aliases
+
+// Traits
+

@@ -1,6 +1,9 @@
 node_modules/
 dist/
+_build/
+.mooncakes/
 packages/*/dist/
+packages/moonbit-bridge/src/generated/
 *.tsbuildinfo
 src/client/public/search-index.json
 src/client/public/__papyr_docs_data/

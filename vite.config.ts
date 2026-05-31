@@ -27,6 +27,10 @@ export default mergeConfig(
           replacement: resolve(__dirname, 'packages/core/src/index.ts'),
         },
         {
+          find: '@f12o/papyr-moonbit-bridge',
+          replacement: resolve(__dirname, 'packages/moonbit-bridge/src/index.ts'),
+        },
+        {
           find: '@f12o/papyr-editor-ui',
           replacement: resolve(__dirname, 'packages/editor-ui/src/index.ts'),
         },

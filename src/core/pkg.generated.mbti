@@ -1,0 +1,923 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/papyr/core"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub let app_server_artifact_schema_version : String
+
+pub fn app_server_bridge_error(String, String) -> AuthoringToolEnvelope
+
+pub fn app_server_create_document(AuthoringSessionSnapshot, String, String, String, String, document? : PapyrDocument?, at~ : String) -> AuthoringToolEnvelope
+
+pub fn app_server_delete_document(AuthoringSessionSnapshot, String) -> ApprovalProposalEnvelope
+
+pub fn app_server_export_diagnostic_report(AuthoringSessionSnapshot, at~ : String) -> DiagnosticReportEnvelope
+
+pub fn app_server_export_preview_artifact(AuthoringSessionSnapshot, at~ : String) -> PreviewArtifactEnvelope
+
+pub fn app_server_export_publication_payload(AuthoringSessionSnapshot, String, at~ : String) -> PublicationPayloadEnvelope
+
+pub fn app_server_export_workspace_source(AuthoringSessionSnapshot, at~ : String) -> WorkspaceExportEnvelope
+
+pub fn app_server_get_diagnostics(AuthoringSessionSnapshot) -> DiagnosticsReadEnvelope
+
+pub fn app_server_get_document(AuthoringSessionSnapshot, String) -> DocumentReadEnvelope
+
+pub fn app_server_get_documents(AuthoringSessionSnapshot) -> DocumentsReadEnvelope
+
+pub fn app_server_get_preview(AuthoringSessionSnapshot) -> PreviewReadEnvelope
+
+pub fn app_server_get_publications(AuthoringSessionSnapshot) -> PublicationsReadEnvelope
+
+pub fn app_server_get_publish_readiness(AuthoringSessionSnapshot) -> PublishReadinessEnvelope
+
+pub fn app_server_get_search(AuthoringSessionSnapshot) -> SearchReadEnvelope
+
+pub fn app_server_get_session_snapshot(AuthoringSessionSnapshot) -> AuthoringToolEnvelope
+
+pub fn app_server_get_workspaces(AuthoringSessionSnapshot) -> WorkspacesReadEnvelope
+
+pub fn app_server_open_workspace(AuthoringSessionSnapshot, String, at~ : String) -> AuthoringToolEnvelope
+
+pub fn app_server_publish_workspace(AuthoringSessionSnapshot) -> ApprovalProposalEnvelope
+
+pub fn app_server_rename_workspace(AuthoringSessionSnapshot, String, at~ : String) -> AuthoringToolEnvelope
+
+pub fn app_server_search_publications(AuthoringSessionSnapshot, query? : String, section? : String, limit? : Int) -> PublicationSearchEnvelope
+
+pub fn app_server_set_preview_route(AuthoringSessionSnapshot, PreviewRoute, mode? : String, at~ : String) -> AuthoringToolEnvelope
+
+pub fn app_server_set_publish_target(AuthoringSessionSnapshot, PublishTarget?, at~ : String) -> AuthoringToolEnvelope
+
+pub fn app_server_set_search_state(AuthoringSessionSnapshot, String, section? : String, limit? : Int, at~ : String) -> AuthoringToolEnvelope
+
+pub fn app_server_update_document(AuthoringSessionSnapshot, String, title? : String?, kind? : String?, source? : String?, document? : PapyrDocument?, clear_document? : Bool, at~ : String) -> AuthoringToolEnvelope
+
+pub let authoring_session_store_version : String
+
+pub fn collect_document_headings(PapyrDocument) -> Array[DocumentHeading]
+
+pub fn document_stack_error(String, String, String, String, expected? : String?, received? : String?) -> DocumentStackToolEnvelope
+
+pub fn document_stack_export_papyr_bundle(Array[PapyrDocument], Array[DocumentMarkdownMirror], generated_at~ : String) -> DocumentStackToolEnvelope
+
+pub fn document_stack_export_publication(Array[PapyrDocument], String, generated_at~ : String) -> DocumentStackToolEnvelope
+
+pub fn document_stack_export_workspace(Array[PapyrDocument], generated_at~ : String) -> DocumentStackToolEnvelope
+
+pub fn document_stack_failure(String, Array[Diagnostic]) -> DocumentStackToolEnvelope
+
+pub fn document_stack_preview_document(PapyrDocument, mode? : String) -> DocumentStackToolEnvelope
+
+pub let document_stack_schema_version : String
+
+pub fn document_stack_search_documents(Array[PapyrDocument], String, limit? : Int) -> DocumentStackToolEnvelope
+
+pub fn document_stack_success(String, Json) -> DocumentStackToolEnvelope
+
+pub fn document_stack_validate_document(PapyrDocument) -> DocumentStackToolEnvelope
+
+pub fn document_text(PapyrDocument) -> String
+
+pub fn document_title(PapyrDocument) -> String
+
+pub fn insert_document_block_after(PapyrDocument, String, Block) -> PapyrDocument
+
+pub fn new_authoring_session_snapshot(AuthoringWorkspace, generated_at~ : String) -> AuthoringSessionSnapshot
+
+pub let papyr_bundle_artifact_kind : String
+
+pub fn parse_papyr_document_json(String) -> PapyrDocumentEnvelope
+
+pub fn pdf_layout_default_color() -> PdfColor
+
+pub fn pdf_layout_default_text_style() -> PdfTextStyle
+
+pub fn pdf_layout_empty_data() -> PdfLayoutData
+
+pub fn pdf_layout_pages_to_array(PdfLayoutPages) -> Array[PdfLayoutPage]
+
+pub fn pdf_layout_resolve_error(String) -> PdfLayoutResolveResult
+
+pub fn pdf_layout_resolve_mode_from_string(String) -> PdfLayoutResolveMode
+
+pub fn pdf_layout_resolve_mode_name(PdfLayoutResolveMode) -> String
+
+pub fn remove_document_block(PapyrDocument, String) -> PapyrDocument
+
+pub fn replace_document_block(PapyrDocument, String, Block) -> PapyrDocument
+
+pub fn resolve_pdf_layout_document(PdfLayoutDocument, PdfLayoutData, PdfLayoutResolveMode) -> PdfLayoutResolveResult
+
+pub fn resume_authoring_session_snapshot(String) -> Result[AuthoringSessionSnapshot, Array[Diagnostic]]
+
+pub fn update_pdf_layout_data_table_node(PdfLayoutDocument, String, PdfDataTableNodePatch) -> PdfLayoutPatchResult
+
+pub fn update_pdf_layout_group_node(PdfLayoutDocument, String, PdfGroupNodePatch) -> PdfLayoutPatchResult
+
+pub fn update_pdf_layout_image_node(PdfLayoutDocument, String, PdfImageNodePatch) -> PdfLayoutPatchResult
+
+pub fn update_pdf_layout_shape_node(PdfLayoutDocument, String, PdfShapeNodePatch) -> PdfLayoutPatchResult
+
+pub fn update_pdf_layout_static_table_node(PdfLayoutDocument, String, PdfStaticTableNodePatch) -> PdfLayoutPatchResult
+
+pub fn update_pdf_layout_text_node(PdfLayoutDocument, String, PdfTextNodePatch) -> PdfLayoutPatchResult
+
+pub fn validate_papyr_document(PapyrDocument) -> PapyrDocumentEnvelope
+
+pub fn validate_papyr_document_json(Json) -> PapyrDocumentEnvelope
+
+pub fn validate_pdf_layout_document(PdfLayoutDocument) -> PdfLayoutValidationResult
+
+pub fn visit_document_blocks(PapyrDocument) -> Array[DocumentBlockVisit]
+
+// Errors
+
+// Types and methods
+pub struct ApprovalProposal {
+  kind : String
+  approval_required : Bool
+  summary : String
+  workspace_id : String?
+  target_endpoint : String?
+  document_count : Int
+  changed_document_ids : Array[String]
+  document_id : String?
+  publish_target : PublishTarget?
+  snapshot : AuthoringSessionSnapshot
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct ApprovalProposalEnvelope {
+  ok : Bool
+  tool : String
+  proposal : ApprovalProposal?
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct AuthoringDiagnostic {
+  code : String
+  severity : String
+  target : String
+  message : String
+  hint : String?
+  context : Map[String, Json]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct AuthoringDocumentRecord {
+  id : String
+  title : String
+  kind : String
+  source : String
+  updated_at : String
+  document : PapyrDocument?
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct AuthoringPublicationRecord {
+  id : String
+  document_id : String
+  title : String
+  kind : String
+  section : String
+  slug : String
+  summary : String
+  published : Bool
+  href : String
+  topics : Array[String]
+  updated_at : String?
+  book_id : String?
+  chapter_order : Int?
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct AuthoringSelectionState {
+  workspace_id : String
+  document_id : String?
+  publication_id : String?
+  panel : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct AuthoringSessionSnapshot {
+  schema_version : String
+  workspace : AuthoringWorkspace
+  workspace_summaries : Array[WorkspaceSummary]
+  documents : Array[AuthoringDocumentRecord]
+  publications : Array[AuthoringPublicationRecord]
+  selection : AuthoringSelectionState
+  preview : PreviewState
+  search : SearchState
+  publish : PublishState
+  diagnostics : Array[AuthoringDiagnostic]
+  last_action : LastActionState?
+} derive(Eq, ToJson, @json.FromJson)
+pub fn AuthoringSessionSnapshot::to_store_json(Self) -> String
+
+pub struct AuthoringToolEnvelope {
+  ok : Bool
+  tool : String
+  snapshot : AuthoringSessionSnapshot?
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct AuthoringWorkspace {
+  id : String
+  name : String
+  updated_at : String
+  publish_target : PublishTarget?
+} derive(Eq, ToJson, @json.FromJson)
+
+pub(all) enum Block {
+  Heading(id~ : String, level~ : Int, content~ : Array[InlineRun])
+  Paragraph(id~ : String, content~ : Array[InlineRun])
+  List(id~ : String, ordered~ : Bool, items~ : Array[ListItem])
+  Code(id~ : String, language~ : String?, source~ : String)
+  Table(id~ : String, columns~ : Array[TableColumn], rows~ : Array[Array[TableCell]], caption~ : String?)
+  Mermaid(id~ : String, source~ : String, caption~ : String?)
+  Moonlight(id~ : String, svg~ : String, caption~ : String?)
+  Excalidraw(id~ : String, elements~ : Array[Json], app_state~ : Map[String, Json]?, files~ : Map[String, Json]?, svg~ : String?, caption~ : String?)
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct Diagnostic {
+  kind : String
+  code : String
+  path : String
+  message : String
+  expected : String?
+  received : String?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct DiagnosticReportBundle {
+  workspace_id : String
+  diagnostics : Array[AuthoringDiagnostic]
+  generated_at : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DiagnosticReportEnvelope {
+  ok : Bool
+  tool : String
+  schema_version : String
+  artifact_kind : String
+  workspace_id : String
+  generated_at : String
+  bundle : DiagnosticReportBundle?
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DiagnosticsReadEnvelope {
+  ok : Bool
+  tool : String
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentBlockVisit {
+  block : Block
+  index_path : Array[Int]
+  parent_list_item : ListItem?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct DocumentHeading {
+  id : String
+  level : Int
+  text : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct DocumentMarkdownMirror {
+  document_id : String
+  markdown : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentPreviewHtml {
+  document_id : String
+  title : String
+  mode : String
+  html : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentPreviewResult {
+  document_id : String
+  title : String
+  mode : String
+  text : String
+  html : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentPublicationExport {
+  schema_version : String
+  exported_at : String
+  publication_id : String
+  document : PapyrDocument
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentReadEnvelope {
+  ok : Bool
+  tool : String
+  document : AuthoringDocumentRecord?
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentSearchHit {
+  id : String
+  title : String
+  score : Int
+  snippet : String
+  matched_fields : Array[String]
+  folder : String?
+  tags : Array[String]
+} derive(Eq, ToJson, @json.FromJson)
+
+type DocumentSearchMetadata derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentSearchResult {
+  query : String
+  total : Int
+  hits : Array[DocumentSearchHit]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentSlideArtifact {
+  document_id : String
+  slide_id : String
+  slide_number : Int
+  title : String
+  document : PapyrDocument
+  html : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentStackToolEnvelope {
+  ok : Bool
+  tool : String
+  result : Json?
+  diagnostics : Array[Diagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentWorkspaceExport {
+  schema_version : String
+  exported_at : String
+  documents : Array[PapyrDocument]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct DocumentsReadEnvelope {
+  ok : Bool
+  tool : String
+  documents : Array[AuthoringDocumentRecord]
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub(all) struct InlineRun {
+  text : String
+  marks : Array[String]
+  href : String?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct LastActionState {
+  name : String
+  at : String
+  status : String
+  summary : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub(all) struct ListItem {
+  blocks : Array[Block]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct PapyrBundleExport {
+  schema_version : String
+  artifact_kind : String
+  generated_at : String
+  documents : Array[PapyrDocument]
+  markdown_mirrors : Array[DocumentMarkdownMirror]
+  preview_html : Array[DocumentPreviewHtml]
+  slides : Array[DocumentSlideArtifact]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub(all) struct PapyrDocument {
+  id : String
+  title : String?
+  blocks : Array[Block]
+  meta : Json?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PapyrDocumentEnvelope {
+  ok : Bool
+  tool : String
+  document : PapyrDocument?
+  diagnostics : Array[Diagnostic]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfBoolBinding {
+  key : String
+  value : Bool
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfBoolConditionOperator {
+  PdfBoolEquals
+  PdfBoolNotEquals
+  PdfBoolEmpty
+  PdfBoolNotEmpty
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfColor {
+  red : Int
+  green : Int
+  blue : Int
+  alpha : Int
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfConditionExpression {
+  PdfStringCondition(field_key~ : String, operator~ : PdfStringConditionOperator, expected~ : String)
+  PdfNumberCondition(field_key~ : String, operator~ : PdfNumberConditionOperator, expected~ : Int)
+  PdfBoolCondition(field_key~ : String, operator~ : PdfBoolConditionOperator, expected~ : Bool)
+  PdfNestedConditionGroup(PdfConditionGroup)
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfConditionGroup {
+  operator : PdfConditionGroupOperator
+  conditions : Array[PdfConditionExpression]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfConditionGroupOperator {
+  PdfConditionAll
+  PdfConditionAny
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfDataListBinding {
+  key : String
+  rows : Array[PdfDataRow]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfDataRow {
+  cells : Array[PdfTextBinding]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfDataTableColumn {
+  key : String
+  header : String
+  field_key : String
+  width : Int?
+  align : PdfTextAlign
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfDataTableNode {
+  frame : PdfNodeFrame
+  collection_key : String
+  columns : Array[PdfDataTableColumn]
+  empty_text : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfDataTableNodePatch {
+  frame : PdfNodeFramePatch?
+  collection_key : String?
+  columns : Array[PdfDataTableColumn]?
+  empty_text : String?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfGroupNode {
+  frame : PdfNodeFrame
+  children : Array[PdfLayoutNode]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfGroupNodePatch {
+  frame : PdfNodeFramePatch?
+  children : Array[PdfLayoutNode]?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfImageBinding {
+  key : String
+  url : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfImageFit {
+  PdfImageFitContain
+  PdfImageFitCover
+  PdfImageFitFill
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfImageNode {
+  frame : PdfNodeFrame
+  source : PdfImageSource
+  alt : PdfTextSource?
+  fit : PdfImageFit
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfImageNodePatch {
+  frame : PdfNodeFramePatch?
+  source : PdfImageSource?
+  alt : PdfTextSource?
+  clear_alt : Bool?
+  fit : PdfImageFit?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfImageSource {
+  PdfFixedImage(String)
+  PdfBoundImage(String)
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfLayoutData {
+  text_values : Array[PdfTextBinding]
+  image_values : Array[PdfImageBinding]
+  number_values : Array[PdfNumberBinding]
+  bool_values : Array[PdfBoolBinding]
+  data_lists : Array[PdfDataListBinding]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfLayoutDocument {
+  id : String
+  title : String
+  pages : PdfLayoutPages
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfLayoutNode {
+  PdfLayoutText(PdfTextNode)
+  PdfLayoutImage(PdfImageNode)
+  PdfLayoutStaticTable(PdfStaticTableNode)
+  PdfLayoutDataTable(PdfDataTableNode)
+  PdfLayoutShape(PdfShapeNode)
+  PdfLayoutGroup(PdfGroupNode)
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfLayoutPage {
+  id : String
+  size : PdfPageSize
+  nodes : Array[PdfLayoutNode]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfLayoutPages {
+  first : PdfLayoutPage
+  rest : Array[PdfLayoutPage]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfLayoutPatch {
+  PdfPatchText(PdfTextNodePatch)
+  PdfPatchImage(PdfImageNodePatch)
+  PdfPatchStaticTable(PdfStaticTableNodePatch)
+  PdfPatchDataTable(PdfDataTableNodePatch)
+  PdfPatchShape(PdfShapeNodePatch)
+  PdfPatchGroup(PdfGroupNodePatch)
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfLayoutPatchResult {
+  document : PdfLayoutDocument
+  changed : Bool
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfLayoutResolveMode {
+  PdfEditorPreview
+  PdfRenderOutput
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfLayoutResolveResult {
+  ok : Bool
+  tool : String
+  document_id : String
+  mode : String
+  pages : Array[PdfResolvedPage]
+  diagnostics : Array[Diagnostic]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfLayoutValidationResult {
+  ok : Bool
+  diagnostics : Array[Diagnostic]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfNodeFrame {
+  id : String
+  rect : PdfRect
+  visible_when : PdfConditionGroup?
+  locked : Bool
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfNodeFramePatch {
+  rect : PdfRectPatch?
+  visible_when : PdfConditionGroup?
+  clear_visible_when : Bool?
+  locked : Bool?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfNumberBinding {
+  key : String
+  value : Int
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfNumberConditionOperator {
+  PdfNumberEquals
+  PdfNumberNotEquals
+  PdfNumberGreaterThan
+  PdfNumberGreaterThanOrEqual
+  PdfNumberLessThan
+  PdfNumberLessThanOrEqual
+  PdfNumberEmpty
+  PdfNumberNotEmpty
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfPageSize {
+  width : Int
+  height : Int
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfRect {
+  x : Int
+  y : Int
+  width : Int
+  height : Int
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfRectPatch {
+  x : Int?
+  y : Int?
+  width : Int?
+  height : Int?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfResolvedNode {
+  node_id : String
+  node_type : String
+  rect : PdfRect
+  content : PdfResolvedNodeContent?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfResolvedNodeContent {
+  PdfResolvedText(value~ : String, style~ : PdfTextStyle)
+  PdfResolvedImage(url~ : String, alt~ : String?, fit~ : PdfImageFit)
+  PdfResolvedStaticTable(headers~ : Array[String], rows~ : Array[Array[String]])
+  PdfResolvedDataTable(headers~ : Array[String], rows~ : Array[Array[String]], empty_text~ : String)
+  PdfResolvedShape(kind~ : PdfShapeKind, style~ : PdfShapeStyle)
+  PdfResolvedGroup(children~ : Array[PdfResolvedNode])
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfResolvedPage {
+  id : String
+  size : PdfPageSize
+  nodes : Array[PdfResolvedNode]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfShapeKind {
+  PdfShapeRectangle
+  PdfShapeLine
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfShapeNode {
+  frame : PdfNodeFrame
+  kind : PdfShapeKind
+  style : PdfShapeStyle
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfShapeNodePatch {
+  frame : PdfNodeFramePatch?
+  kind : PdfShapeKind?
+  style : PdfShapeStyle?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfShapeStyle {
+  fill : PdfColor?
+  stroke : PdfColor?
+  stroke_width : Int
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfStaticTableNode {
+  frame : PdfNodeFrame
+  columns : Array[PdfTableColumn]
+  rows : Array[Array[PdfTextSource]]
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfStaticTableNodePatch {
+  frame : PdfNodeFramePatch?
+  columns : Array[PdfTableColumn]?
+  rows : Array[Array[PdfTextSource]]?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfStringConditionOperator {
+  PdfStringEquals
+  PdfStringNotEquals
+  PdfStringContains
+  PdfStringNotContains
+  PdfStringStartsWith
+  PdfStringEndsWith
+  PdfStringEmpty
+  PdfStringNotEmpty
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfTableColumn {
+  key : String
+  header : String
+  width : Int?
+  align : PdfTextAlign
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfTextAlign {
+  PdfTextAlignLeft
+  PdfTextAlignCenter
+  PdfTextAlignRight
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfTextBinding {
+  key : String
+  value : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfTextNode {
+  frame : PdfNodeFrame
+  source : PdfTextSource
+  style : PdfTextStyle
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfTextNodePatch {
+  frame : PdfNodeFramePatch?
+  source : PdfTextSource?
+  style : PdfTextStylePatch?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) enum PdfTextSource {
+  PdfFixedText(String)
+  PdfBoundText(String)
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfTextStyle {
+  font_family : String
+  font_size : Int
+  color : PdfColor
+  align : PdfTextAlign
+  bold : Bool
+  italic : Bool
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct PdfTextStylePatch {
+  font_family : String?
+  font_size : Int?
+  color : PdfColor?
+  align : PdfTextAlign?
+  bold : Bool?
+  italic : Bool?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct PreviewArtifactBundle {
+  workspace_id : String
+  preview : PreviewState
+  document : AuthoringDocumentRecord?
+  publication : AuthoringPublicationRecord?
+  generated_at : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PreviewArtifactEnvelope {
+  ok : Bool
+  tool : String
+  schema_version : String
+  artifact_kind : String
+  workspace_id : String
+  generated_at : String
+  bundle : PreviewArtifactBundle?
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PreviewReadEnvelope {
+  ok : Bool
+  tool : String
+  preview : PreviewState
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PreviewRoute {
+  name : String
+  slug : String?
+  book_slug : String?
+  chapter_slug : String?
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PreviewState {
+  route : PreviewRoute
+  mode : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PublicationPayloadBundle {
+  workspace_id : String
+  publication : AuthoringPublicationRecord
+  document : AuthoringDocumentRecord?
+  target : PublishTarget?
+  generated_at : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PublicationPayloadEnvelope {
+  ok : Bool
+  tool : String
+  schema_version : String
+  artifact_kind : String
+  workspace_id : String
+  publication_id : String
+  generated_at : String
+  bundle : PublicationPayloadBundle?
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PublicationSearchEnvelope {
+  ok : Bool
+  tool : String
+  query : String
+  section : String
+  limit : Int
+  results : Array[AuthoringPublicationRecord]
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PublicationsReadEnvelope {
+  ok : Bool
+  tool : String
+  publications : Array[AuthoringPublicationRecord]
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PublishReadinessEnvelope {
+  ok : Bool
+  tool : String
+  ready : Bool
+  blocking_reasons : Array[String]
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PublishResult {
+  published_document_count : Int
+  site_url : String?
+  updated_at : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PublishState {
+  ready : Bool
+  blocking_reasons : Array[String]
+  target : PublishTarget?
+  last_result : PublishResult?
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct PublishTarget {
+  endpoint : String
+  workspace_id : String
+  token_ref : String?
+} derive(Eq, ToJson, @json.FromJson)
+
+type SearchField derive(Eq)
+
+pub struct SearchReadEnvelope {
+  ok : Bool
+  tool : String
+  search : SearchState
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct SearchState {
+  query : String
+  section : String
+  limit : Int
+} derive(Eq, ToJson, @json.FromJson)
+
+pub(all) struct TableCell {
+  text : String
+  colspan : Int?
+  rowspan : Int?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct TableColumn {
+  key : String
+  header : String
+  align : String?
+  width : Json?
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub struct WorkspaceExportEnvelope {
+  ok : Bool
+  tool : String
+  schema_version : String
+  artifact_kind : String
+  workspace_id : String
+  generated_at : String
+  bundle : WorkspaceSourceBundle?
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct WorkspaceSourceBundle {
+  workspace : AuthoringWorkspace
+  documents : Array[AuthoringDocumentRecord]
+  publications : Array[AuthoringPublicationRecord]
+  selection : AuthoringSelectionState
+  preview : PreviewState
+  search : SearchState
+  publish : PublishState
+  exported_at : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct WorkspaceSummary {
+  id : String
+  name : String
+  document_count : Int
+  updated_at : String
+} derive(Eq, ToJson, @json.FromJson)
+
+pub struct WorkspacesReadEnvelope {
+  ok : Bool
+  tool : String
+  workspace : AuthoringWorkspace
+  workspaces : Array[WorkspaceSummary]
+  diagnostics : Array[AuthoringDiagnostic]
+} derive(Eq, ToJson, @json.FromJson)
+
+// Type aliases
+
+// Traits

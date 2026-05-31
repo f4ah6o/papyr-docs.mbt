@@ -258,6 +258,18 @@ importers:
         specifier: ^4.7.0
         version: 4.8.0
 
+  packages/moonbit-bridge:
+    devDependencies:
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.2(@types/node@22.19.19)(tsx@4.22.3)
+      vite-plugin-dts:
+        specifier: ^4.4.0
+        version: 4.5.4(@types/node@22.19.19)(rollup@4.60.4)(typescript@5.9.3)(vite@6.4.2(@types/node@22.19.19)(tsx@4.22.3))
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.19.19)
+
   packages/moonlight: {}
 
   packages/preview:
@@ -316,6 +328,9 @@ importers:
       '@f12o/papyr-core':
         specifier: workspace:*
         version: link:../core
+      '@f12o/papyr-moonbit-bridge':
+        specifier: workspace:*
+        version: link:../moonbit-bridge
       minisearch:
         specifier: ^7.1.0
         version: 7.2.0
