@@ -56,21 +56,42 @@ fn default_rule(kind : String) -> RelationKindRule {
         acyclic: Some(true),
       }
     "sequence" =>
-      { stored: true, inverse: None, deriveInverse: None, maxOutgoing: None, acyclic: None }
+      {
+        stored: true,
+        inverse: None,
+        deriveInverse: None,
+        maxOutgoing: None,
+        acyclic: None,
+      }
     "tag" =>
-      { stored: true, inverse: None, deriveInverse: None, maxOutgoing: None, acyclic: None }
+      {
+        stored: true,
+        inverse: None,
+        deriveInverse: None,
+        maxOutgoing: None,
+        acyclic: None,
+      }
     _ =>
-      { stored: false, inverse: None, deriveInverse: None, maxOutgoing: None, acyclic: None }
+      {
+        stored: false,
+        inverse: None,
+        deriveInverse: None,
+        maxOutgoing: None,
+        acyclic: None,
+      }
   }
 }
 
 ///|
 pub fn papyr_relation_policy() -> RelationPolicy {
   let kinds : Map[String, RelationKindRule] = Map::new()
-  for kind in ["parent", "child", "reference", "backlink", "dependency", "sequence", "tag"] {
+  for
+    kind in [
+      "parent", "child", "reference", "backlink", "dependency", "sequence", "tag",
+    ] {
     kinds[kind] = default_rule(kind)
   }
-  { kinds }
+  { kinds, }
 }
 
 ///|
@@ -98,7 +119,10 @@ fn option_int_or(value : Int?, fallback : Int?) -> Int? {
 }
 
 ///|
-fn merge_rule(base : RelationKindRule, rule_override : RelationKindRule?) -> RelationKindRule {
+fn merge_rule(
+  base : RelationKindRule,
+  rule_override : RelationKindRule?,
+) -> RelationKindRule {
   match rule_override {
     None => base
     Some(rule) =>
@@ -121,10 +145,13 @@ pub fn create_relation_policy(
     None => policy
     Some(items) => {
       let kinds : Map[String, RelationKindRule] = Map::new()
-      for kind in ["parent", "child", "reference", "backlink", "dependency", "sequence", "tag"] {
+      for
+        kind in [
+          "parent", "child", "reference", "backlink", "dependency", "sequence", "tag",
+        ] {
         kinds[kind] = merge_rule(default_rule(kind), items.get(kind))
       }
-      { kinds }
+      { kinds, }
     }
   }
 }
@@ -138,7 +165,10 @@ pub fn get_relation_kind_rule(
 }
 
 ///|
-pub fn get_inverse_relation_kind(policy : RelationPolicy, kind : String) -> String? {
+pub fn get_inverse_relation_kind(
+  policy : RelationPolicy,
+  kind : String,
+) -> String? {
   get_relation_kind_rule(policy, kind).inverse
 }
 
@@ -148,7 +178,10 @@ pub fn should_derive_inverse(policy : RelationPolicy, kind : String) -> Bool {
 }
 
 ///|
-pub fn get_max_outgoing_relations(policy : RelationPolicy, kind : String) -> Int? {
+pub fn get_max_outgoing_relations(
+  policy : RelationPolicy,
+  kind : String,
+) -> Int? {
   get_relation_kind_rule(policy, kind).maxOutgoing
 }
 

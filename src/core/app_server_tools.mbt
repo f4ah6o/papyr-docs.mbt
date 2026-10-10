@@ -282,7 +282,7 @@ fn last_action(
   status : String,
   summary : String,
 ) -> LastActionState {
-  { name, at, status, summary }
+  { name, at, status, summary, }
 }
 
 ///|
@@ -545,14 +545,14 @@ pub fn app_server_get_document(
 pub fn app_server_get_preview(
   snapshot : AuthoringSessionSnapshot,
 ) -> PreviewReadEnvelope {
-  { ok: true, tool: "get_preview", preview: snapshot.preview, diagnostics: [] }
+  { ok: true, tool: "get_preview", preview: snapshot.preview, diagnostics: [], }
 }
 
 ///|
 pub fn app_server_get_search(
   snapshot : AuthoringSessionSnapshot,
 ) -> SearchReadEnvelope {
-  { ok: true, tool: "get_search", search: snapshot.search, diagnostics: [] }
+  { ok: true, tool: "get_search", search: snapshot.search, diagnostics: [], }
 }
 
 ///|
@@ -600,7 +600,7 @@ pub fn app_server_search_publications(
 pub fn app_server_get_diagnostics(
   snapshot : AuthoringSessionSnapshot,
 ) -> DiagnosticsReadEnvelope {
-  { ok: true, tool: "get_diagnostics", diagnostics: snapshot.diagnostics }
+  { ok: true, tool: "get_diagnostics", diagnostics: snapshot.diagnostics, }
 }
 
 ///|
@@ -641,7 +641,7 @@ pub fn app_server_open_workspace(
         ),
       ),
     )
-    { ok: true, tool: "open_workspace", snapshot: Some(next), diagnostics: [] }
+    { ok: true, tool: "open_workspace", snapshot: Some(next), diagnostics: [], }
   } else {
     let diagnostic = authoring_diagnostic(
       "workspace_not_found",
@@ -762,7 +762,12 @@ pub fn app_server_create_document(
         ),
       ),
     )
-    { ok: true, tool: "create_document", snapshot: Some(next), diagnostics: [] }
+    {
+      ok: true,
+      tool: "create_document",
+      snapshot: Some(next),
+      diagnostics: [],
+    }
   }
 }
 
@@ -837,7 +842,12 @@ pub fn app_server_update_document(
         ),
       ),
     )
-    { ok: true, tool: "update_document", snapshot: Some(next), diagnostics: [] }
+    {
+      ok: true,
+      tool: "update_document",
+      snapshot: Some(next),
+      diagnostics: [],
+    }
   } else {
     let diagnostic = authoring_diagnostic(
       "document_not_found",
@@ -903,12 +913,17 @@ pub fn app_server_set_preview_route(
 ) -> AuthoringToolEnvelope {
   let next = rebuild_snapshot(
     snapshot,
-    preview={ route, mode },
+    preview={ route, mode, },
     last_action=Some(
       last_action("set_preview_route", at, "ok", "changed preview route"),
     ),
   )
-  { ok: true, tool: "set_preview_route", snapshot: Some(next), diagnostics: [] }
+  {
+    ok: true,
+    tool: "set_preview_route",
+    snapshot: Some(next),
+    diagnostics: [],
+  }
 }
 
 ///|
@@ -932,7 +947,7 @@ pub fn app_server_set_search_state(
   } else {
     let next = rebuild_snapshot(
       snapshot,
-      search={ query, section, limit },
+      search={ query, section, limit, },
       last_action=Some(
         last_action("set_search_state", at, "ok", "changed search state"),
       ),

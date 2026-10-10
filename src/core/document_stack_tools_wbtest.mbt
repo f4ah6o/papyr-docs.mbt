@@ -5,10 +5,10 @@ fn stack_tool_doc() -> PapyrDocument {
     title: Some("Intro"),
     blocks: [
       Block::Heading(id="h1", level=1, content=[
-        { text: "Intro", marks: [], href: None },
+        { text: "Intro", marks: [], href: None, },
       ]),
       Block::Paragraph(id="p1", content=[
-        { text: "Searchable body", marks: [], href: None },
+        { text: "Searchable body", marks: [], href: None, },
       ]),
     ],
     meta: None,
@@ -22,10 +22,10 @@ fn stack_tool_operations_doc() -> PapyrDocument {
     title: Some("Operations Runbook"),
     blocks: [
       Block::Heading(id="h1", level=1, content=[
-        { text: "Operations Runbook", marks: [], href: None },
+        { text: "Operations Runbook", marks: [], href: None, },
       ]),
       Block::Paragraph(id="p1", content=[
-        { text: "Escalation checklist", marks: [], href: None },
+        { text: "Escalation checklist", marks: [], href: None, },
       ]),
     ],
     meta: Some(
@@ -117,7 +117,7 @@ test "document stack search ranks tags above body matches" {
     title: Some("Body Match"),
     blocks: [
       Block::Paragraph(id="p1", content=[
-        { text: "runbook appears only in body", marks: [], href: None },
+        { text: "runbook appears only in body", marks: [], href: None, },
       ]),
     ],
     meta: None,
@@ -188,26 +188,26 @@ test "document stack exports all-in-one Papyr bundle" {
     title: Some("Deck"),
     blocks: [
       Block::Heading(id="h1", level=1, content=[
-        { text: "Deck", marks: [], href: None },
+        { text: "Deck", marks: [], href: None, },
       ]),
       Block::Paragraph(id="p1", content=[
-        { text: "Intro", marks: [], href: None },
+        { text: "Intro", marks: [], href: None, },
       ]),
       Block::Heading(id="h2-a", level=2, content=[
-        { text: "Section A", marks: [], href: None },
+        { text: "Section A", marks: [], href: None, },
       ]),
       Block::Paragraph(id="p2", content=[
-        { text: "A body", marks: [], href: None },
+        { text: "A body", marks: [], href: None, },
       ]),
       Block::Heading(id="h2-b", level=2, content=[
-        { text: "Section B", marks: [], href: None },
+        { text: "Section B", marks: [], href: None, },
       ]),
     ],
     meta: None,
   }
   let exported = document_stack_export_papyr_bundle(
     [doc],
-    [{ document_id: "deck", markdown: "# Deck" }],
+    [{ document_id: "deck", markdown: "# Deck", }],
     generated_at="2026-05-25T00:00:00Z",
   )
   inspect(exported.ok, content="true")
@@ -236,7 +236,7 @@ test "document stack exports all-in-one Papyr bundle" {
 test "document stack rejects mismatched markdown mirrors" {
   let exported = document_stack_export_papyr_bundle(
     [stack_tool_doc()],
-    [{ document_id: "missing", markdown: "# Intro" }],
+    [{ document_id: "missing", markdown: "# Intro", }],
     generated_at="2026-05-25T00:00:00Z",
   )
   inspect(exported.ok, content="false")

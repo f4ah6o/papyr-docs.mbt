@@ -23,8 +23,11 @@ pub struct ResolvedRelation {
 
 ///|
 pub fn is_stored_relation_kind(value : String) -> Bool {
-  value == "parent" || value == "reference" || value == "dependency" ||
-  value == "sequence" || value == "tag"
+  value == "parent" ||
+  value == "reference" ||
+  value == "dependency" ||
+  value == "sequence" ||
+  value == "tag"
 }
 
 ///|
@@ -59,7 +62,10 @@ fn metadata_label(metadata : RelationMetadata?) -> String {
 }
 
 ///|
-pub fn compare_metadata(left : RelationMetadata?, right : RelationMetadata?) -> Int {
+pub fn compare_metadata(
+  left : RelationMetadata?,
+  right : RelationMetadata?,
+) -> Int {
   let left_order = metadata_order(left)
   let right_order = metadata_order(right)
   if left_order < right_order {
@@ -94,8 +100,18 @@ pub fn compare_resolved_relations(
   right : ResolvedRelation,
 ) -> Int {
   let raw_order = compare_raw_relations(
-    { source: left.source, target: left.target, rel: left.rel, metadata: left.metadata },
-    { source: right.source, target: right.target, rel: right.rel, metadata: right.metadata },
+    {
+      source: left.source,
+      target: left.target,
+      rel: left.rel,
+      metadata: left.metadata,
+    },
+    {
+      source: right.source,
+      target: right.target,
+      rel: right.rel,
+      metadata: right.metadata,
+    },
   )
   if raw_order != 0 {
     return raw_order
@@ -127,8 +143,14 @@ pub fn sort_resolved_relations(
 
 ///|
 pub fn raw_relation_key(relation : RawRelation) -> String {
-  relation.source + "\u{0000}" + relation.target + "\u{0000}" + relation.rel +
-  "\u{0000}" + metadata_order_for_key(relation.metadata) + "\u{0000}" +
+  relation.source +
+  "\u{0000}" +
+  relation.target +
+  "\u{0000}" +
+  relation.rel +
+  "\u{0000}" +
+  metadata_order_for_key(relation.metadata) +
+  "\u{0000}" +
   metadata_label(relation.metadata)
 }
 
@@ -159,11 +181,15 @@ pub fn resolved_relation_key(relation : ResolvedRelation) -> String {
     target: relation.target,
     rel: relation.rel,
     metadata: relation.metadata,
-  }) + "\u{0000}" + derived_key
+  }) +
+  "\u{0000}" +
+  derived_key
 }
 
 ///|
-pub fn dedupe_raw_relations(relations : Array[RawRelation]) -> Array[RawRelation] {
+pub fn dedupe_raw_relations(
+  relations : Array[RawRelation],
+) -> Array[RawRelation] {
   let deduped : Map[String, RawRelation] = Map::new()
   for relation in sort_raw_relations(relations) {
     deduped[raw_relation_key(relation)] = relation

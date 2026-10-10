@@ -51,7 +51,7 @@ pub fn search_to_indexable(document : @core.PapyrDocument) -> IndexableDocument 
   let headings : Array[String] = []
   for block in all_blocks {
     let text = search_block_text(block)
-    snapshots.push({ id: block_id(block), kind: block_type(block), text })
+    snapshots.push({ id: block_id(block), kind: block_type(block), text, })
     match block {
       @core.Heading(..) => headings.push(text)
       _ => ()
@@ -176,7 +176,9 @@ fn moonlight_svg_text(svg : String) -> String {
               None => break
               Some(close_start) => {
                 let value = decode_basic_entities(
-                  strip_tags(content_tail[:close_start].to_owned()).trim().to_owned(),
+                  strip_tags(content_tail[:close_start].to_owned())
+                  .trim()
+                  .to_owned(),
                 )
                 if value.length() > 0 {
                   parts.push(value)

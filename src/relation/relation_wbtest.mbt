@@ -4,7 +4,7 @@ test "raw relation key keeps integer order compatible with TypeScript" {
     source: "chapter-a",
     target: "book-a",
     rel: "parent",
-    metadata: Some({ label: None, order: Some(2.0) }),
+    metadata: Some({ label: None, order: Some(2.0), }),
   }
   inspect(
     raw_relation_key(relation),
@@ -18,7 +18,7 @@ test "raw relation key preserves non-integer order" {
     source: "a",
     target: "b",
     rel: "sequence",
-    metadata: Some({ label: Some("half"), order: Some(1.5) }),
+    metadata: Some({ label: Some("half"), order: Some(1.5), }),
   }
   inspect(
     raw_relation_key(relation),

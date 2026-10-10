@@ -187,10 +187,10 @@ pub fn new_authoring_session_snapshot(
       panel: "workspace-list",
     },
     preview: {
-      route: { name: "home", slug: None, book_slug: None, chapter_slug: None },
+      route: { name: "home", slug: None, book_slug: None, chapter_slug: None, },
       mode: "document",
     },
-    search: { query: "", section: "all", limit: 20 },
+    search: { query: "", section: "all", limit: 20, },
     publish: {
       ready: false,
       blocking_reasons: publish_blocking_reasons,

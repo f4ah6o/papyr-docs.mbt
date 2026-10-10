@@ -414,7 +414,7 @@ pub(all) struct PdfLayoutPatchResult {
 
 ///|
 pub fn pdf_layout_default_color() -> PdfColor {
-  { red: 33, green: 38, blue: 41, alpha: 255 }
+  { red: 33, green: 38, blue: 41, alpha: 255, }
 }
 
 ///|
@@ -481,14 +481,10 @@ pub fn validate_pdf_layout_document(
   let seen_page_ids : Array[String] = []
   for page_index, page in pdf_layout_pages_to_array(document.pages) {
     validate_pdf_layout_page(
-      page,
-      page_index,
-      seen_page_ids,
-      seen_ids,
-      diagnostics,
+      page, page_index, seen_page_ids, seen_ids, diagnostics,
     )
   }
-  { ok: diagnostics.length() == 0, diagnostics }
+  { ok: diagnostics.length() == 0, diagnostics, }
 }
 
 ///|
@@ -1120,7 +1116,10 @@ fn resolve_pdf_data_table_rows(
 }
 
 ///|
-fn pdf_data_table_binding_key(collection_key : String, field_key : String) -> String {
+fn pdf_data_table_binding_key(
+  collection_key : String,
+  field_key : String,
+) -> String {
   if collection_key == "" {
     field_key
   } else if field_key == "" {
@@ -1155,7 +1154,7 @@ fn patch_pdf_layout_document(
   let changed = first_changed || rest_changed
   {
     document: if changed {
-      { id: document.id, title: document.title, pages: { first, rest } }
+      { id: document.id, title: document.title, pages: { first, rest, }, }
     } else {
       document
     },
@@ -1171,7 +1170,7 @@ fn patch_pdf_layout_page(
 ) -> (PdfLayoutPage, Bool) {
   let (nodes, changed) = patch_pdf_layout_nodes(page.nodes, node_id, patch)
   if changed {
-    ({ id: page.id, size: page.size, nodes }, true)
+    ({ id: page.id, size: page.size, nodes, }, true)
   } else {
     (page, false)
   }
@@ -1215,7 +1214,7 @@ fn patch_pdf_layout_node(
         patch,
       )
       if changed {
-        (PdfLayoutGroup({ frame: group.frame, children }), true)
+        (PdfLayoutGroup({ frame: group.frame, children, }), true)
       } else {
         (node, false)
       }

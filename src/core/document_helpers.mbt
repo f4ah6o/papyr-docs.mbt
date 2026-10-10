@@ -53,7 +53,7 @@ pub fn collect_document_headings(
       Heading(id~, level~, content~) => {
         let text = document_inline_text(content)
         if text.length() > 0 {
-          headings.push({ id, level, text })
+          headings.push({ id, level, text, })
         }
       }
       _ => ()
@@ -63,7 +63,9 @@ pub fn collect_document_headings(
 }
 
 ///|
-pub fn visit_document_blocks(document : PapyrDocument) -> Array[DocumentBlockVisit] {
+pub fn visit_document_blocks(
+  document : PapyrDocument,
+) -> Array[DocumentBlockVisit] {
   visit_blocks(document.blocks, [], None)
 }
 
@@ -75,12 +77,7 @@ pub fn replace_document_block(
 ) -> PapyrDocument {
   let (blocks, changed) = replace_blocks_by_id(document.blocks, block_id, block)
   if changed {
-    {
-      id: document.id,
-      title: document.title,
-      blocks,
-      meta: document.meta,
-    }
+    { id: document.id, title: document.title, blocks, meta: document.meta, }
   } else {
     document
   }
@@ -92,14 +89,13 @@ pub fn insert_document_block_after(
   block_id : String,
   block : Block,
 ) -> PapyrDocument {
-  let (blocks, changed) = insert_block_after_id(document.blocks, block_id, block)
+  let (blocks, changed) = insert_block_after_id(
+    document.blocks,
+    block_id,
+    block,
+  )
   if changed {
-    {
-      id: document.id,
-      title: document.title,
-      blocks,
-      meta: document.meta,
-    }
+    { id: document.id, title: document.title, blocks, meta: document.meta, }
   } else {
     document
   }
@@ -112,12 +108,7 @@ pub fn remove_document_block(
 ) -> PapyrDocument {
   let (blocks, changed) = remove_block_by_id(document.blocks, block_id)
   if changed {
-    {
-      id: document.id,
-      title: document.title,
-      blocks,
-      meta: document.meta,
-    }
+    { id: document.id, title: document.title, blocks, meta: document.meta, }
   } else {
     document
   }
@@ -132,7 +123,7 @@ fn visit_blocks(
   let visits : Array[DocumentBlockVisit] = []
   for index, block in blocks {
     let index_path = append_index(base_path, index)
-    visits.push({ block, index_path, parent_list_item })
+    visits.push({ block, index_path, parent_list_item, })
     match block {
       List(items~, ..) =>
         for item_index, item in items {
@@ -268,9 +259,7 @@ fn replace_blocks_by_id(
     match block {
       List(id~, ordered~, items~) => {
         let (next_items, items_changed) = replace_list_items_by_id(
-          items,
-          target_id,
-          replacement,
+          items, target_id, replacement,
         )
         if items_changed {
           next.push(List(id~, ordered~, items=next_items))
@@ -321,9 +310,7 @@ fn insert_block_after_id(
     match block {
       List(id~, ordered~, items~) => {
         let (next_items, items_changed) = insert_list_items_after_id(
-          items,
-          target_id,
-          insert,
+          items, target_id, insert,
         )
         if items_changed {
           next.push(List(id~, ordered~, items=next_items))
@@ -381,8 +368,7 @@ fn remove_block_by_id(
     match block {
       List(id~, ordered~, items~) => {
         let (next_items, items_changed) = remove_list_items_by_id(
-          items,
-          target_id,
+          items, target_id,
         )
         if items_changed {
           next.push(List(id~, ordered~, items=next_items))

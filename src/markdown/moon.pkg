@@ -1,4 +1,4 @@
 import {
-  "f4ah6o/papyr/core" @core,
+  "f4ah6o/papyr/core",
   "moonbitlang/core/json",
 }
