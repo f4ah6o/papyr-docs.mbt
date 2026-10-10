@@ -111,12 +111,12 @@ test "PDF layout bridge resolves typed layout JSON" {
       pages: {
         first: {
           id: "page-1",
-          size: { width: 595, height: 842 },
+          size: { width: 595, height: 842, },
           nodes: [
             @core.PdfLayoutNode::PdfLayoutText({
               frame: {
                 id: "title",
-                rect: { x: 32, y: 32, width: 180, height: 24 },
+                rect: { x: 32, y: 32, width: 180, height: 24, },
                 visible_when: None,
                 locked: false,
               },
@@ -129,7 +129,7 @@ test "PDF layout bridge resolves typed layout JSON" {
       },
     },
     data: Some({
-      text_values: [{ key: "title", value: "Invoice" }],
+      text_values: [{ key: "title", value: "Invoice", }],
       image_values: [],
       number_values: [],
       bool_values: [],

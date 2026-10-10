@@ -65,9 +65,9 @@ test "papyr document middleware reports validation diagnostics" {
     title: None,
     blocks: [
       Heading(id="h1", level=7, content=[
-        { text: "bad", marks: ["strong", "link"], href: None },
+        { text: "bad", marks: ["strong", "link"], href: None, },
       ]),
-      List(id="l1", ordered=false, items=[{ blocks: [] }]),
+      List(id="l1", ordered=false, items=[{ blocks: [], }]),
     ],
     meta: None,
   }
@@ -88,7 +88,7 @@ test "papyr document middleware recursively validates nested list blocks" {
     title: None,
     blocks: [
       List(id="l1", ordered=false, items=[
-        { blocks: [Heading(id="h1", level=9, content=[])] },
+        { blocks: [Heading(id="h1", level=9, content=[])], },
       ]),
     ],
     meta: None,

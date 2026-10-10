@@ -6,7 +6,7 @@ fn pdf_test_frame(
   width : Int,
   height : Int,
 ) -> PdfNodeFrame {
-  { id, rect: { x, y, width, height }, visible_when: None, locked: false }
+  { id, rect: { x, y, width, height, }, visible_when: None, locked: false, }
 }
 
 ///|
@@ -31,7 +31,7 @@ fn pdf_test_document() -> PdfLayoutDocument {
     pages: {
       first: {
         id: "page-1",
-        size: { width: 595, height: 842 },
+        size: { width: 595, height: 842, },
         nodes: [
           PdfLayoutText({
             frame: pdf_test_frame("invoice-number", 40, 36, 180, 24),
@@ -41,7 +41,7 @@ fn pdf_test_document() -> PdfLayoutDocument {
           PdfLayoutImage({
             frame: {
               id: "logo",
-              rect: { x: 420, y: 32, width: 96, height: 48 },
+              rect: { x: 420, y: 32, width: 96, height: 48, },
               visible_when: Some(pdf_test_visible_when_logo()),
               locked: false,
             },
@@ -75,7 +75,7 @@ fn pdf_test_document() -> PdfLayoutDocument {
             kind: PdfShapeLine,
             style: {
               fill: None,
-              stroke: Some({ red: 210, green: 214, blue: 218, alpha: 255 }),
+              stroke: Some({ red: 210, green: 214, blue: 218, alpha: 255, }),
               stroke_width: 1,
             },
           }),
@@ -89,18 +89,18 @@ fn pdf_test_document() -> PdfLayoutDocument {
 ///|
 fn pdf_test_data() -> PdfLayoutData {
   {
-    text_values: [{ key: "invoice_number", value: "INV-100" }],
-    image_values: [{ key: "logo_url", url: "https://example.test/logo.png" }],
+    text_values: [{ key: "invoice_number", value: "INV-100", }],
+    image_values: [{ key: "logo_url", url: "https://example.test/logo.png", }],
     number_values: [],
-    bool_values: [{ key: "show_logo", value: false }],
+    bool_values: [{ key: "show_logo", value: false, }],
     data_lists: [
       {
         key: "items",
         rows: [
           {
             cells: [
-              { key: "name", value: "Design" },
-              { key: "quantity", value: "2" },
+              { key: "name", value: "Design", },
+              { key: "quantity", value: "2", },
             ],
           },
         ],
@@ -175,15 +175,12 @@ test "PDF layout preview marks missing bindings while render output stays blank"
 ///|
 test "PDF layout preview namespaces missing data table cells" {
   let data : PdfLayoutData = {
-    text_values: [{ key: "invoice_number", value: "INV-100" }],
+    text_values: [{ key: "invoice_number", value: "INV-100", }],
     image_values: [],
     number_values: [],
-    bool_values: [{ key: "show_logo", value: false }],
+    bool_values: [{ key: "show_logo", value: false, }],
     data_lists: [
-      {
-        key: "items",
-        rows: [{ cells: [{ key: "name", value: "Design" }] }],
-      },
+      { key: "items", rows: [{ cells: [{ key: "name", value: "Design", }], }], },
     ],
   }
   let preview = resolve_pdf_layout_document(
@@ -204,7 +201,7 @@ test "PDF layout preview namespaces missing data table cells" {
 test "PDF layout typed patch updates text nodes and rejects mismatched node kinds" {
   let patch : PdfTextNodePatch = {
     frame: Some({
-      rect: Some({ x: Some(48), y: None, width: None, height: None }),
+      rect: Some({ x: Some(48), y: None, width: None, height: None, }),
       visible_when: None,
       clear_visible_when: None,
       locked: None,
@@ -250,22 +247,18 @@ test "PDF layout typed patch updates text nodes and rejects mismatched node kind
 
 ///|
 test "PDF layout patch clears optional condition and image alt" {
-  let patched = update_pdf_layout_image_node(
-    pdf_test_document(),
-    "logo",
-    {
-      frame: Some({
-        rect: None,
-        visible_when: None,
-        clear_visible_when: Some(true),
-        locked: None,
-      }),
-      source: None,
-      alt: None,
-      clear_alt: Some(true),
-      fit: None,
-    },
-  )
+  let patched = update_pdf_layout_image_node(pdf_test_document(), "logo", {
+    frame: Some({
+      rect: None,
+      visible_when: None,
+      clear_visible_when: Some(true),
+      locked: None,
+    }),
+    source: None,
+    alt: None,
+    clear_alt: Some(true),
+    fit: None,
+  })
   inspect(patched.changed, content="true")
   let resolved = resolve_pdf_layout_document(
     patched.document,
@@ -286,12 +279,12 @@ test "PDF layout missing bool bindings behave like false" {
     pages: {
       first: {
         id: "page-1",
-        size: { width: 595, height: 842 },
+        size: { width: 595, height: 842, },
         nodes: [
           PdfLayoutText({
             frame: {
               id: "flag-copy",
-              rect: { x: 0, y: 0, width: 120, height: 24 },
+              rect: { x: 0, y: 0, width: 120, height: 24, },
               visible_when: Some({
                 operator: PdfConditionAll,
                 conditions: [
@@ -328,12 +321,12 @@ test "PDF layout missing number bindings behave like zero" {
     pages: {
       first: {
         id: "page-1",
-        size: { width: 595, height: 842 },
+        size: { width: 595, height: 842, },
         nodes: [
           PdfLayoutText({
             frame: {
               id: "age-copy",
-              rect: { x: 0, y: 0, width: 120, height: 24 },
+              rect: { x: 0, y: 0, width: 120, height: 24, },
               visible_when: Some({
                 operator: PdfConditionAll,
                 conditions: [
@@ -375,16 +368,10 @@ test "PDF layout validation catches impossible document state" {
     pages: {
       first: {
         id: "page-1",
-        size: { width: 0, height: 842 },
+        size: { width: 0, height: 842, },
         nodes: [text, text],
       },
-      rest: [
-        {
-          id: "page-1",
-          size: { width: 595, height: 842 },
-          nodes: [],
-        },
-      ],
+      rest: [{ id: "page-1", size: { width: 595, height: 842, }, nodes: [], }],
     },
   }
   let validation = validate_pdf_layout_document(document)

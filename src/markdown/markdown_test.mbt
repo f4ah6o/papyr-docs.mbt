@@ -128,10 +128,7 @@ test "parse markdown keeps underscores inside identifiers as text" {
 test "parse markdown splits paragraph before adjacent table" {
   let doc = parse_markdown("Intro\n| Name |\n| --- |\n| Alice |", id="table")
   @json.json_inspect(doc.blocks, content=[
-    [
-      "Paragraph",
-      { "id": "b1", "content": [{ "text": "Intro", "marks": [] }] },
-    ],
+    ["Paragraph", { "id": "b1", "content": [{ "text": "Intro", "marks": [] }] }],
     [
       "Table",
       {
@@ -157,8 +154,8 @@ test "serialize markdown keeps table mermaid and excalidraw mirrors" {
     blocks: [
       @core.Block::Table(
         id="table-1",
-        columns=[{ key: "name", header: "Name", align: None, width: None }],
-        rows=[[{ text: "Papyr", colspan: None, rowspan: None }]],
+        columns=[{ key: "name", header: "Name", align: None, width: None, }],
+        rows=[[{ text: "Papyr", colspan: None, rowspan: None, }]],
         caption=Some("Projects"),
       ),
       @core.Block::Mermaid(id="m1", source="graph TD; A-->B;", caption=None),

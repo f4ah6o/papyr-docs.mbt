@@ -74,7 +74,10 @@ fn compare_publication_diagnostics(
   if code_order != 0 {
     return code_order
   }
-  let document_order = compare_string_ascending(left.documentId.unwrap_or(""), right.documentId.unwrap_or(""))
+  let document_order = compare_string_ascending(
+    left.documentId.unwrap_or(""),
+    right.documentId.unwrap_or(""),
+  )
   if document_order != 0 {
     return document_order
   }
@@ -91,7 +94,9 @@ pub fn build_publication_tree_state(
   }
   let all_docs : Array[PublicationDocument] = []
   docs_by_id.each(fn(_, doc) { all_docs.push(doc) })
-  all_docs.sort_by(fn(left, right) { compare_string_ascending(left.id, right.id) })
+  all_docs.sort_by(fn(left, right) {
+    compare_string_ascending(left.id, right.id)
+  })
   let document_ids : Array[String] = []
   let relations : Array[RawRelation] = []
   let diagnostics : Array[PublicationTreeDiagnostic] = []
@@ -147,12 +152,7 @@ fn publication_relations_for_document(
           invalid_fields.push("bookId")
         }
         let normalized_chapter_order = match publication.chapterOrder {
-          Some(order) =>
-            if order >= 1 {
-              Some(order)
-            } else {
-              None
-            }
+          Some(order) => if order >= 1 { Some(order) } else { None }
           None => None
         }
         if normalized_chapter_order == None {
@@ -166,7 +166,10 @@ fn publication_relations_for_document(
                   source: doc.id,
                   target: book_id,
                   rel: "parent",
-                  metadata: Some({ label: None, order: Some(order.to_double()) }),
+                  metadata: Some({
+                    label: None,
+                    order: Some(order.to_double()),
+                  }),
                 },
               ],
               [],
@@ -200,7 +203,9 @@ pub fn list_chapter_ids_for_book(
 }
 
 ///|
-pub fn format_relation_diagnostic(diagnostic : PublicationTreeDiagnostic) -> String {
+pub fn format_relation_diagnostic(
+  diagnostic : PublicationTreeDiagnostic,
+) -> String {
   let related = match diagnostic.relatedDocumentIds {
     Some(ids) =>
       if ids.length() > 0 {

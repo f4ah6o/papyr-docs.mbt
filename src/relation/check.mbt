@@ -33,12 +33,18 @@ fn sorted_unique_strings(values : Array[String]) -> Array[String] {
 }
 
 ///|
-fn compare_diagnostics(left : RelationDiagnostic, right : RelationDiagnostic) -> Int {
+fn compare_diagnostics(
+  left : RelationDiagnostic,
+  right : RelationDiagnostic,
+) -> Int {
   let code_order = compare_string_ascending(left.code, right.code)
   if code_order != 0 {
     return code_order
   }
-  let document_order = compare_string_ascending(left.documentId.unwrap_or(""), right.documentId.unwrap_or(""))
+  let document_order = compare_string_ascending(
+    left.documentId.unwrap_or(""),
+    right.documentId.unwrap_or(""),
+  )
   if document_order != 0 {
     return document_order
   }
@@ -96,7 +102,7 @@ pub fn check_relations(options : CheckRelationsOptions) -> CheckRelationsResult 
     diagnostics.push(diagnostic)
   }
   diagnostics.sort_by(compare_diagnostics)
-  { relations, diagnostics }
+  { relations, diagnostics, }
 }
 
 ///|
@@ -195,7 +201,11 @@ fn find_cycles(relations : Array[RawRelation]) -> Array[Array[String]] {
     let stack : Array[CycleFrame] = []
     visiting[node] = true
     path.push(node)
-    stack.push({ node, nextIndex: 0, targets: adjacency.get(node).unwrap_or([]) })
+    stack.push({
+      node,
+      nextIndex: 0,
+      targets: adjacency.get(node).unwrap_or([]),
+    })
     while stack.length() > 0 {
       let frame_index = stack.length() - 1
       let frame = stack[frame_index]
@@ -207,7 +217,11 @@ fn find_cycles(relations : Array[RawRelation]) -> Array[Array[String]] {
         continue
       }
       let next = frame.targets[frame.nextIndex]
-      stack[frame_index] = { node: frame.node, nextIndex: frame.nextIndex + 1, targets: frame.targets }
+      stack[frame_index] = {
+        node: frame.node,
+        nextIndex: frame.nextIndex + 1,
+        targets: frame.targets,
+      }
       if visiting.contains(next) {
         let mut cycle_start = -1
         for i, value in path {
@@ -230,12 +244,18 @@ fn find_cycles(relations : Array[RawRelation]) -> Array[Array[String]] {
       }
       visiting[next] = true
       path.push(next)
-      stack.push({ node: next, nextIndex: 0, targets: adjacency.get(next).unwrap_or([]) })
+      stack.push({
+        node: next,
+        nextIndex: 0,
+        targets: adjacency.get(next).unwrap_or([]),
+      })
     }
   }
   let result : Array[Array[String]] = []
   cycles.each(fn(_, cycle) { result.push(cycle) })
-  result.sort_by(fn(left, right) { compare_string_ascending(left.join("\u{0000}"), right.join("\u{0000}")) })
+  result.sort_by(fn(left, right) {
+    compare_string_ascending(left.join("\u{0000}"), right.join("\u{0000}"))
+  })
   result
 }
 

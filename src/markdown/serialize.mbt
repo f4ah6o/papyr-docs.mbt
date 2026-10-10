@@ -45,7 +45,7 @@ fn block_to_markdown(block : @core.Block) -> String {
         gfm_table_to_markdown(columns, rows)
       } else {
         "```papyr-table\n" +
-        ({ columns, rows, caption } : TableMarkdownPayload)
+        ({ columns, rows, caption, } : TableMarkdownPayload)
         .to_json()
         .stringify(indent=2) +
         "\n```"
@@ -53,13 +53,13 @@ fn block_to_markdown(block : @core.Block) -> String {
     @core.Block::Mermaid(source~, ..) => "```mermaid\n" + source + "\n```"
     @core.Block::Moonlight(svg~, caption~, ..) =>
       "```papyr-moonlight\n" +
-      ({ svg, caption } : MoonlightMarkdownPayload)
+      ({ svg, caption, } : MoonlightMarkdownPayload)
       .to_json()
       .stringify(indent=2) +
       "\n```"
     @core.Block::Excalidraw(elements~, app_state~, files~, svg~, caption~, ..) =>
       "```papyr-excalidraw\n" +
-      ({ elements, app_state, files, svg, caption } : ExcalidrawMarkdownPayload)
+      ({ elements, app_state, files, svg, caption, } : ExcalidrawMarkdownPayload)
       .to_json()
       .stringify(indent=2) +
       "\n```"
@@ -95,7 +95,8 @@ fn can_serialize_gfm_table(
   }
   let used : Array[String] = []
   for i, column in columns {
-    if column.width is Some(_) || column.key != unique_column_key(column.header, i, used) {
+    if column.width is Some(_) ||
+      column.key != unique_column_key(column.header, i, used) {
       return false
     }
   }
@@ -119,7 +120,9 @@ fn gfm_table_to_markdown(
 ) -> String {
   let lines : Array[String] = []
   lines.push("| " + join_table_cells(columns.map(fn(c) { c.header })) + " |")
-  lines.push("| " + join_table_cells(columns.map(fn(c) { align_marker(c.align) })) + " |")
+  lines.push(
+    "| " + join_table_cells(columns.map(fn(c) { align_marker(c.align) })) + " |",
+  )
   for row in rows {
     lines.push("| " + join_table_cells(row.map(fn(c) { c.text })) + " |")
   }
@@ -149,7 +152,11 @@ fn join_table_cells(parts : Array[String]) -> String {
 }
 
 ///|
-fn unique_column_key(header : String, index : Int, used : Array[String]) -> String {
+fn unique_column_key(
+  header : String,
+  index : Int,
+  used : Array[String],
+) -> String {
   let base = normalize_column_key(header)
   let root = if base == "" { "column-\{index + 1}" } else { base }
   let mut key = root
@@ -170,15 +177,13 @@ fn normalize_column_key(value : String) -> String {
   let sb = StringBuilder::new()
   let mut previous_dash = false
   for ch in value.trim() {
-    if (ch >= 'A' && ch <= 'Z') {
+    if ch >= 'A' && ch <= 'Z' {
       if previous_dash && sb.to_string().length() == 0 {
         previous_dash = false
       }
       sb.write_char(Char::from_int(ch.to_int() + 32))
       previous_dash = false
-    } else if (ch >= 'a' && ch <= 'z') ||
-      (ch >= '0' && ch <= '9') ||
-      ch > '~' {
+    } else if (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch > '~' {
       sb.write_char(ch)
       previous_dash = false
     } else if !previous_dash && sb.to_string().length() > 0 {

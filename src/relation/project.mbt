@@ -49,12 +49,13 @@ pub fn project_tree(options : ProjectRelationOptions) -> TreeProjection {
   let document_ids = sorted_unique_strings(options.documentIds)
   let nodes : Map[String, TreeProjectionNode] = Map::new()
   for id in document_ids {
-    nodes[id] = { id, parentId: None, childIds: [] }
+    nodes[id] = { id, parentId: None, childIds: [], }
   }
   let child_edges_by_parent : Map[String, Array[ChildEdge]] = Map::new()
   let parent_by_child : Map[String, String] = Map::new()
   for relation in sort_resolved_relations(options.relations) {
-    if relation.rel != "child" || !nodes.contains(relation.source) ||
+    if relation.rel != "child" ||
+      !nodes.contains(relation.source) ||
       !nodes.contains(relation.target) {
       continue
     }
@@ -68,7 +69,10 @@ pub fn project_tree(options : ProjectRelationOptions) -> TreeProjection {
       }
     }
     let edges = child_edges_by_parent.get(relation.source).unwrap_or([])
-    edges.push({ childId: relation.target, order: metadata_order(relation.metadata) })
+    edges.push({
+      childId: relation.target,
+      order: metadata_order(relation.metadata),
+    })
     child_edges_by_parent[relation.source] = edges
   }
   child_edges_by_parent.each(fn(parent_id, edges) {
@@ -95,17 +99,20 @@ pub fn project_tree(options : ProjectRelationOptions) -> TreeProjection {
       }
     }
   }
-  { roots, leafRoots: leaf_roots, nodes }
+  { roots, leafRoots: leaf_roots, nodes, }
 }
 
 ///|
-pub fn project_backlinks(options : ProjectRelationOptions) -> Map[String, Array[String]] {
+pub fn project_backlinks(
+  options : ProjectRelationOptions,
+) -> Map[String, Array[String]] {
   let backlinks : Map[String, Array[String]] = Map::new()
   for id in sorted_unique_strings(options.documentIds) {
     backlinks[id] = []
   }
   for relation in sort_resolved_relations(options.relations) {
-    if relation.rel == "backlink" && backlinks.contains(relation.source) &&
+    if relation.rel == "backlink" &&
+      backlinks.contains(relation.source) &&
       backlinks.contains(relation.target) {
       let items = backlinks[relation.source]
       items.push(relation.target)

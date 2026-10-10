@@ -113,7 +113,7 @@ pub fn document_stack_success(
   tool : String,
   result : Json,
 ) -> DocumentStackToolEnvelope {
-  { ok: true, tool, result: Some(result), diagnostics: [] }
+  { ok: true, tool, result: Some(result), diagnostics: [], }
 }
 
 ///|
@@ -121,7 +121,7 @@ pub fn document_stack_failure(
   tool : String,
   diagnostics : Array[Diagnostic],
 ) -> DocumentStackToolEnvelope {
-  { ok: false, tool, result: None, diagnostics }
+  { ok: false, tool, result: None, diagnostics, }
 }
 
 ///|
@@ -134,7 +134,7 @@ pub fn document_stack_error(
   received? : String? = None,
 ) -> DocumentStackToolEnvelope {
   document_stack_failure(tool, [
-    { kind: "tool", code, path, message, expected, received },
+    { kind: "tool", code, path, message, expected, received, },
   ])
 }
 
@@ -236,7 +236,7 @@ pub fn document_stack_search_documents(
   }
   document_stack_success(
     "search_documents",
-    { query, total: hits.length(), hits: limited }.to_json(),
+    { query, total: hits.length(), hits: limited, }.to_json(),
   )
 }
 
@@ -574,7 +574,7 @@ fn push_search_field(
 ) -> Unit {
   let normalized = text.trim().to_owned()
   if normalized.length() > 0 {
-    fields.push({ name, text: normalized, weight })
+    fields.push({ name, text: normalized, weight, })
   }
 }
 

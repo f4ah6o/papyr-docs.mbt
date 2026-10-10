@@ -5,16 +5,16 @@ fn search_test_document() -> @core.PapyrDocument {
     title: Some("T"),
     blocks: [
       @core.Heading(id="h1", level=1, content=[
-        { text: "Intro", marks: [], href: None },
+        { text: "Intro", marks: [], href: None, },
       ]),
       @core.Paragraph(id="p1", content=[
-        { text: "Body text.", marks: [], href: None },
+        { text: "Body text.", marks: [], href: None, },
       ]),
       @core.List(id="l1", ordered=false, items=[
         {
           blocks: [
             @core.Heading(id="h2", level=2, content=[
-              { text: "Nested", marks: [], href: None },
+              { text: "Nested", marks: [], href: None, },
             ]),
             @core.Mermaid(id="m1", source="graph TD; A-->B;", caption=None),
           ],
@@ -41,11 +41,11 @@ test "search indexable preserves block snapshot order" {
 test "search block text extracts table and diagram text" {
   let table = @core.Table(
     id="t",
-    columns=[{ key: "a", header: "A", align: None, width: None }],
+    columns=[{ key: "a", header: "A", align: None, width: None, }],
     rows=[
       [
-        { text: "cell-1", colspan: None, rowspan: None },
-        { text: "cell-2", colspan: None, rowspan: None },
+        { text: "cell-1", colspan: None, rowspan: None, },
+        { text: "cell-2", colspan: None, rowspan: None, },
       ],
     ],
     caption=None,

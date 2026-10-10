@@ -86,7 +86,7 @@ pub fn parse_markdown(
     next_id = next_id + 1
     i = next_i
   }
-  { id, title: first_heading(blocks), blocks, meta: None }
+  { id, title: first_heading(blocks), blocks, meta: None, }
 }
 
 ///|
@@ -284,7 +284,7 @@ fn consume_table(
   while i < lines.length() && looks_like_table_row(lines[i]) {
     rows.push(
       split_table_row(lines[i]).map(fn(cell) {
-        { text: cell.trim().to_owned(), colspan: None, rowspan: None }
+        { text: cell.trim().to_owned(), colspan: None, rowspan: None, }
       }),
     )
     i = i + 1
@@ -447,7 +447,7 @@ fn parse_inlines(text : String) -> Array[@core.InlineRun] {
     match next_inline_marker(rest) {
       Some((pos, marker)) => {
         if pos > 0 {
-          runs.push({ text: rest[:pos].to_owned(), marks: [], href: None })
+          runs.push({ text: rest[:pos].to_owned(), marks: [], href: None, })
           rest = rest[pos:].to_owned()
           continue
         }
@@ -457,13 +457,13 @@ fn parse_inlines(text : String) -> Array[@core.InlineRun] {
             rest = next_rest
           }
           None => {
-            runs.push({ text: first_char(rest), marks: [], href: None })
+            runs.push({ text: first_char(rest), marks: [], href: None, })
             rest = drop_first_char(rest)
           }
         }
       }
       None => {
-        runs.push({ text: rest, marks: [], href: None })
+        runs.push({ text: rest, marks: [], href: None, })
         rest = ""
       }
     }
@@ -550,7 +550,7 @@ fn consume_underscore_mark(text : String) -> (@core.InlineRun, String)? {
     Some(close) => {
       let inner = tail[:close].to_owned()
       let rest = tail[close + 1:].to_owned()
-      Some(({ text: inner, marks: ["italic"], href: None }, rest))
+      Some(({ text: inner, marks: ["italic"], href: None, }, rest))
     }
     None => None
   }
@@ -606,7 +606,7 @@ fn consume_mark(
     Some(close) => {
       let inner = tail[:close].to_owned()
       let rest = tail[close + delimiter.length():].to_owned()
-      Some(({ text: inner, marks: [mark], href: None }, rest))
+      Some(({ text: inner, marks: [mark], href: None, }, rest))
     }
     None => None
   }
@@ -626,7 +626,7 @@ fn consume_link(text : String) -> (@core.InlineRun, String)? {
         Some(url_end) => {
           let href = url_tail[:url_end].to_owned()
           let rest = url_tail[url_end + 1:].to_owned()
-          Some(({ text: label, marks: ["link"], href: Some(href) }, rest))
+          Some(({ text: label, marks: ["link"], href: Some(href), }, rest))
         }
         None => None
       }

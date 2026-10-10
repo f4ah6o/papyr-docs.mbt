@@ -13,7 +13,9 @@ pub struct ResolveRelationsResult {
 } derive(Eq, Debug, ToJson, @json.FromJson)
 
 ///|
-pub fn resolve_relations(options : ResolveRelationsOptions) -> ResolveRelationsResult {
+pub fn resolve_relations(
+  options : ResolveRelationsOptions,
+) -> ResolveRelationsResult {
   let policy = options.policy.unwrap_or(papyr_relation_policy())
   let checked = check_relations({
     documentIds: options.documentIds,
@@ -45,7 +47,9 @@ pub fn resolve_relations(options : ResolveRelationsOptions) -> ResolveRelationsR
   }
   {
     relations: checked.relations,
-    resolvedRelations: sort_resolved_relations(dedupe_resolved_relations(resolved)),
+    resolvedRelations: sort_resolved_relations(
+      dedupe_resolved_relations(resolved),
+    ),
     diagnostics: checked.diagnostics,
   }
 }
