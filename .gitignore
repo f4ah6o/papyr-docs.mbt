@@ -8,3 +8,4 @@ packages/moonbit-bridge/src/generated/
 src/client/public/search-index.json
 src/client/public/__papyr_docs_data/
 .wrangler/
+.cloudflare/
