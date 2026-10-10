@@ -1,19 +1,28 @@
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import {
   appRoot,
+  cfProjectDir,
   type DeployTarget,
-  renderWranglerConfig,
   resolveBucketName,
 } from './cloudflare-config.js';
 
-const here = dirname(fileURLToPath(import.meta.url));
 const uploadRoot = resolve(appRoot, 'dist/content/r2');
-const localPersistPath = resolve(appRoot, '.wrangler/state');
+// `cf dev` は --persist-to を無視して cf プロジェクト直下の
+// .wrangler/state を使うので、ローカル put はそこへ書く。
+const localPersistPath = resolve(cfProjectDir, '.wrangler/state');
 const uploadManifestKey = '.upload-manifest.json';
 const uploadManifestVersion = 1;
 
@@ -44,7 +53,9 @@ async function main(): Promise<void> {
   const mode = normalizeMode(process.env.R2_UPLOAD_MODE);
   const target = resolveUploadTarget(mode, process.env.R2_UPLOAD_TARGET);
   const buckets =
-    mode === 'remote' && target !== 'both' ? [resolveRemoteBucket(target)] : resolveLocalBuckets();
+    mode === 'remote' && target !== 'both'
+      ? [resolveRemoteBucket(target)]
+      : resolveLocalBuckets();
   const files = await collectUploadFiles(uploadRoot);
   if (files.length === 0) {
     console.warn(
@@ -57,30 +68,31 @@ async function main(): Promise<void> {
     return;
   }
 
-  const configPath = await writeTempConfig(mode, target);
-  try {
-    for (const bucket of buckets) {
-      const previousManifest = await readRemoteUploadManifest(configPath, bucket, mode);
-      const plan = createUploadPlan(files, previousManifest);
-      console.log(
-        [
-          `R2 diff: bucket=${bucket}`,
-          `put=${plan.puts.length}`,
-          `delete=${plan.deletes.length}`,
-          `unchanged=${files.length - plan.puts.length}`,
-        ].join(' '),
-      );
+  for (const bucket of buckets) {
+    const previousManifest = await readRemoteUploadManifest(bucket, mode);
+    const plan = createUploadPlan(files, previousManifest);
+    console.log(
+      [
+        `R2 diff: bucket=${bucket}`,
+        `put=${plan.puts.length}`,
+        `delete=${plan.deletes.length}`,
+        `unchanged=${files.length - plan.puts.length}`,
+      ].join(' '),
+    );
 
-      for (const key of plan.deletes) {
-        await deleteObject(configPath, bucket, key, mode);
-      }
-      for (const file of orderPuts(plan.puts)) {
-        await putObject(configPath, bucket, file.key, file.path, file.entry.contentType, mode);
-      }
-      await writeRemoteUploadManifest(configPath, bucket, files, mode);
+    for (const key of plan.deletes) {
+      await deleteObject(bucket, key, mode);
     }
-  } finally {
-    await rm(dirname(configPath), { recursive: true, force: true });
+    for (const file of orderPuts(plan.puts)) {
+      await putObject(
+        bucket,
+        file.key,
+        file.path,
+        file.entry.contentType,
+        mode,
+      );
+    }
+    await writeRemoteUploadManifest(bucket, files, mode);
   }
 }
 
@@ -104,7 +116,10 @@ async function collectUploadFiles(root: string): Promise<UploadFile[]> {
       const full = resolve(current, entry.name);
       if (entry.isDirectory()) {
         await walk(full);
-      } else if (entry.isFile() && (entry.name.endsWith('.json') || entry.name.endsWith('.md'))) {
+      } else if (
+        entry.isFile() &&
+        (entry.name.endsWith('.json') || entry.name.endsWith('.md'))
+      ) {
         const key = relative(root, full).replaceAll('\\', '/');
         result.push({
           path: full,
@@ -157,9 +172,12 @@ export function createUploadPlan(
   files: UploadFile[],
   previous: UploadManifest | undefined,
 ): UploadPlan {
-  const previousFiles = previous?.version === uploadManifestVersion ? previous.files : {};
+  const previousFiles =
+    previous?.version === uploadManifestVersion ? previous.files : {};
   const nextFiles = new Map(files.map((file) => [file.key, file.entry]));
-  const puts = files.filter((file) => !sameManifestEntry(file.entry, previousFiles[file.key]));
+  const puts = files.filter(
+    (file) => !sameManifestEntry(file.entry, previousFiles[file.key]),
+  );
   const deletes = Object.keys(previousFiles)
     .filter((key) => !nextFiles.has(key))
     .sort();
@@ -196,31 +214,19 @@ async function createManifestEntry(path: string): Promise<UploadManifestEntry> {
 }
 
 async function readRemoteUploadManifest(
-  configPath: string,
   bucket: string,
   mode: 'local' | 'remote',
 ): Promise<UploadManifest | undefined> {
   const dir = await mkdtemp(join(tmpdir(), 'papyr-docs-r2-manifest-'));
   const path = join(dir, uploadManifestKey);
   try {
-    const result = await run(
-      'pnpm',
-      [
-        'exec',
-        'wrangler',
-        '-c',
-        configPath,
-        'r2',
-        'object',
-        'get',
-        `${bucket}/papyr-docs/${uploadManifestKey}`,
-        '--file',
-        path,
-        mode === 'remote' ? '--remote' : '--local',
-        ...(mode === 'local' ? ['--persist-to', localPersistPath] : []),
-      ],
-      appRoot,
-      { allowFailure: true, quiet: true },
+    const result = await runObjectCommand(
+      'get',
+      `papyr-docs/${uploadManifestKey}`,
+      bucket,
+      mode,
+      [],
+      { allowFailure: true, stdoutFile: path },
     );
     if (result !== 0) return undefined;
     const manifest = JSON.parse(await readFile(path, 'utf8')) as UploadManifest;
@@ -233,7 +239,6 @@ async function readRemoteUploadManifest(
 }
 
 async function writeRemoteUploadManifest(
-  configPath: string,
   bucket: string,
   files: UploadFile[],
   mode: 'local' | 'remote',
@@ -247,103 +252,118 @@ async function writeRemoteUploadManifest(
   };
   try {
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-    await putObject(configPath, bucket, uploadManifestKey, path, 'application/json', mode);
+    await putObject(bucket, uploadManifestKey, path, 'application/json', mode);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 }
 
 async function putObject(
-  configPath: string,
   bucket: string,
   key: string,
   file: string,
   contentType: string,
   mode: 'local' | 'remote',
 ): Promise<void> {
-  const objectPath = `${bucket}/papyr-docs/${key}`;
-  await run(
-    'pnpm',
-    [
-      'exec',
-      'wrangler',
-      '-c',
-      configPath,
-      'r2',
-      'object',
-      'put',
-      objectPath,
-      '--file',
-      file,
-      '--content-type',
-      contentType,
-      mode === 'remote' ? '--remote' : '--local',
-      ...(mode === 'local' ? ['--persist-to', localPersistPath] : []),
-    ],
-    appRoot,
-  );
-  console.log(`uploaded: ${objectPath}`);
+  await runObjectCommand('put', `papyr-docs/${key}`, bucket, mode, [
+    '--file',
+    file,
+    '--content-type',
+    contentType,
+  ]);
+  console.log(`uploaded: ${bucket}/papyr-docs/${key}`);
 }
 
 async function deleteObject(
-  configPath: string,
   bucket: string,
   key: string,
   mode: 'local' | 'remote',
 ): Promise<void> {
-  const objectPath = `${bucket}/papyr-docs/${key}`;
-  await run(
-    'pnpm',
-    [
-      'exec',
-      'wrangler',
-      '-c',
-      configPath,
-      'r2',
-      'object',
-      'delete',
-      objectPath,
-      '--force',
-      mode === 'remote' ? '--remote' : '--local',
-      ...(mode === 'local' ? ['--persist-to', localPersistPath] : []),
-    ],
-    appRoot,
-  );
-  console.log(`deleted: ${objectPath}`);
+  await runObjectCommand('delete', `papyr-docs/${key}`, bucket, mode, [
+    '--force',
+  ]);
+  console.log(`deleted: ${bucket}/papyr-docs/${key}`);
 }
 
-async function writeTempConfig(
+/**
+ * Runs one R2 object operation.
+ *
+ * Remote mode uses `cf r2 objects <op> <key> --bucket-name <bucket>`.
+ * Local mode intentionally uses `wrangler r2 object <op> <bucket>/<key>`:
+ * `cf r2 objects ... --local` completes the operation but the CLI process
+ * never exits in cf 1.0.0-beta.14 (the local simulation stays alive), which
+ * would hang this script. `wrangler -c /dev/null` runs without a config file
+ * and exits cleanly; both share the same `.wrangler/state` miniflare layout.
+ */
+async function runObjectCommand(
+  op: 'get' | 'put' | 'delete',
+  objectKey: string,
+  bucket: string,
   mode: 'local' | 'remote',
-  target: DeployTarget | 'both',
-): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'papyr-docs-r2-'));
-  const path = join(dir, 'wrangler.toml');
-  const targetForConfig = target === 'both' ? 'preview' : target;
-  const config = renderWranglerConfig(targetForConfig, {
-    includeAccountId: mode === 'remote',
-    workerName: 'papyr-docs-r2-upload',
-  });
-  await writeFile(path, config, 'utf8');
-  return path;
+  extraArgs: string[],
+  options: { allowFailure?: boolean; stdoutFile?: string } = {},
+): Promise<number> {
+  const args =
+    mode === 'local'
+      ? [
+          'exec',
+          'wrangler',
+          '-c',
+          '/dev/null',
+          'r2',
+          'object',
+          op,
+          `${bucket}/${objectKey}`,
+          ...extraArgs,
+          '--local',
+          '--persist-to',
+          localPersistPath,
+        ]
+      : [
+          'exec',
+          'cf',
+          'r2',
+          'objects',
+          op,
+          objectKey,
+          '--bucket-name',
+          bucket,
+          ...extraArgs,
+        ];
+  return await run('pnpm', args, cfProjectDir, options);
 }
 
 async function run(
   cmd: string,
   args: string[],
   cwd: string,
-  options: { allowFailure?: boolean; quiet?: boolean } = {},
+  options: { allowFailure?: boolean; stdoutFile?: string } = {},
 ): Promise<number> {
   return await new Promise<number>((resolvePromise, reject) => {
     const child = spawn(cmd, args, {
       cwd,
-      stdio: options.quiet ? 'ignore' : 'inherit',
+      stdio: options.stdoutFile ? ['ignore', 'pipe', 'inherit'] : 'inherit',
       env: process.env,
     });
+    let settled = false;
+    let stdoutOpen: import('node:fs').WriteStream | undefined;
+    if (options.stdoutFile && child.stdout) {
+      stdoutOpen = createWriteStream(options.stdoutFile);
+      child.stdout.pipe(stdoutOpen);
+    }
     child.on('error', reject);
     child.on('exit', (code) => {
+      if (settled) return;
+      settled = true;
+      stdoutOpen?.close();
       const exitCode = code ?? 1;
       if (exitCode === 0 || options.allowFailure) resolvePromise(exitCode);
-      else reject(new Error(`${cmd} ${args.join(' ')} failed with exit code ${exitCode}`));
+      else
+        reject(
+          new Error(
+            `${cmd} ${args.join(' ')} failed with exit code ${exitCode}`,
+          ),
+        );
     });
   });
 }

@@ -1,17 +1,9 @@
-import { rm } from 'node:fs/promises';
-import { dirname } from 'node:path';
 import { spawn } from 'node:child_process';
-import { appRoot, type DeployTarget, writeTempWranglerConfig } from './cloudflare-config.js';
+import { cfProjectDir, type DeployTarget } from './cloudflare-config.js';
 
 async function main(): Promise<void> {
   const target = normalizeTarget(process.argv[2]);
-  const configPath = await writeTempWranglerConfig(target);
-
-  try {
-    await run('pnpm', ['exec', 'wrangler', 'deploy', '-c', configPath], appRoot);
-  } finally {
-    await rm(dirname(configPath), { recursive: true, force: true });
-  }
+  await run('pnpm', ['exec', 'cf', 'deploy', '--mode', target], cfProjectDir);
 }
 
 function normalizeTarget(value: string | undefined): DeployTarget {
@@ -29,7 +21,12 @@ async function run(cmd: string, args: string[], cwd: string): Promise<void> {
     child.on('error', reject);
     child.on('exit', (code) => {
       if (code === 0) resolvePromise();
-      else reject(new Error(`${cmd} ${args.join(' ')} failed with exit code ${code ?? 'null'}`));
+      else
+        reject(
+          new Error(
+            `${cmd} ${args.join(' ')} failed with exit code ${code ?? 'null'}`,
+          ),
+        );
     });
   });
 }
